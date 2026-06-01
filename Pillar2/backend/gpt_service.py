@@ -2,7 +2,7 @@ import openai
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_response(patient_message: str, conversation_history: list) -> str:
