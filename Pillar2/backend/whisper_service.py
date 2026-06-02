@@ -2,7 +2,7 @@ import openai
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def transcribe_audio(audio_file_path: str) -> str:
