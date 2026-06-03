@@ -7,6 +7,7 @@ import subprocess
 from whisper_service import transcribe_audio
 from gpt_service import get_response
 from elevenlabs_service import text_to_speech
+from patient_service import load_patient
 
 SAMPLE_RATE = 16000
 SILENCE_THRESHOLD = 0.01
@@ -39,7 +40,9 @@ def save_audio(audio):
     sf.write(tmp.name, audio, SAMPLE_RATE)
     return tmp.name
 
-def run_conversation():
+def run_conversation(patient_id: str):
+    patient_profile = load_patient(patient_id)
+    print(f"Loaded profile: {patient_profile}")
     print("CogBridge is ready. Start speaking...")
     conversation_history = []
 
@@ -58,7 +61,7 @@ def run_conversation():
         print(f"You said: {transcript}")
 
         conversation_history.append({"role": "user", "content": transcript})
-        response = get_response(transcript, conversation_history[:-1])
+        response = get_response(transcript, conversation_history[:-1], patient_profile)
         conversation_history.append({"role": "assistant", "content": response})
 
         print(f"CogBridge: {response}")
@@ -71,4 +74,4 @@ def run_conversation():
             break
 
 if __name__ == "__main__":
-    run_conversation()
+    run_conversation("patient_001")

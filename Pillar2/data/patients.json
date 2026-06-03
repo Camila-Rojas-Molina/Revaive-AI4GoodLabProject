@@ -1,0 +1,20 @@
+{
+  "patients": [
+    {
+      "id": "patient_001",
+      "name": "John",
+      "career": "high school teacher",
+      "family": "a daughter named Sarah and a son named Michael",
+      "hobbies": "gardening and reading mystery novels",
+      "hometown": "Montreal"
+    },
+    {
+      "id": "patient_002", 
+      "name": "Marie",
+      "career": "nurse",
+      "family": "a husband named Pierre and three grandchildren",
+      "hobbies": "cooking and watching hockey",
+      "hometown": "Quebec City"
+    }
+  ]
+}
