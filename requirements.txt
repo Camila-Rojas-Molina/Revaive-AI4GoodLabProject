@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+supabase
+python-dotenv
+xgboost
+scikit-learn
+pandas
+numpy
+requests
+python-jose[cryptography]
+httpx
+librosa
+spacy
+openai
+sounddevice
+soundfile
+elevenlabs
