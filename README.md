@@ -31,7 +31,7 @@ API docs available at `http://localhost:8000/docs`.
 
 ```bash
 cd apps/dashboard
-npm install
+npm ci
 npm run dev
 ```
 
@@ -41,11 +41,30 @@ Opens on `http://localhost:3000`.
 
 ```bash
 cd apps/patient
-npm install
+npm ci
 npm run dev
 ```
 
 Opens on `http://localhost:3001`.
+
+### Continuous Integration
+
+This repo includes a GitHub Actions workflow at [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+It runs automatically on pushes and pull requests and does the following:
+
+- installs Python dependencies from `requirements.txt`
+- runs `npm ci` and `npm run build` in `apps/dashboard`
+- runs `npm ci` and `npm run build` in `apps/patient`
+
+For local clean installs that match CI, run:
+
+```bash
+cd apps/dashboard && npm ci
+cd ../patient && npm ci
+```
+
+Use `npm install` only when you intentionally need to update the lockfile.
 
 ### Pillar 2 voice session
 
