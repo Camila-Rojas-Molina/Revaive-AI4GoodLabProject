@@ -4,9 +4,7 @@ import sys
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
-
-cst_path = os.path.join(os.path.dirname(__file__), "../")
-sys.path.append(cst_path)
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 from cst.cst_manager import build_system_prompt
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

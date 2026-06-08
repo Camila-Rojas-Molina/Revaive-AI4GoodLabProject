@@ -13,7 +13,7 @@ from elevenlabs_service import text_to_speech
 from patient_service import load_patient
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'cst'))
-from cst_manager import get_theme_by_score, get_difficulty
+from cst.cst_manager import get_theme_by_score, get_difficulty
 
 SAMPLE_RATE = 16000
 SILENCE_THRESHOLD = 0.01
