@@ -13,11 +13,51 @@ Team: Joyanne Ma, Amy Dao, Norah Njonjo, Camila Rojas
 
 ### Prerequisites
 
-Copy `.env.example` to `.env` and fill in all values:
+This is described underneath (env secrets set up)
+
+
+### Teammate setup (recommended)
+
+Follow these ordered steps so each teammate can get a working local development environment.
+
+1. Clone the repo (if you haven't already):
 
 ```bash
-cp .env.example .env
+git clone https://github.com/Camila-Rojas-Molina/AI4GoodLab_M2.git
+cd AI4GoodLab_M2
 ```
+
+2. Create and activate a Python virtual environment in the repository root (each developer should create their own `.venv`):
+
+```bash
+python -m venv .venv
+# macOS / Linux
+source .venv/bin/activate
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+```
+
+3. Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Create your local env file and add secrets (do NOT commit this file):
+
+    There should be a .env.local file with two supabase keys, and .env in you main folder with the OpenAI and ElevenLabs keys.
+
+5. Install frontend dependencies (dashboard and patient):
+
+(This is underneath, keep scrolling)
+
+6. In VS Code: open the repository, then run the Command Palette → "Python: Select Interpreter" → choose the `.venv` interpreter. New terminals will auto-activate the environment if `python.terminal.activateEnvironment` is enabled.
+
+Notes:
+- Each teammate should create their own `.venv` (do not share the `.venv` folder in version control).
+- Keep `.env` and `.venv/` in `.gitignore`; do not commit secrets or local environments. Consider adding a `.env.example` with placeholders if one is not present.
+- It's convenient to commit a project `.vscode/settings.json` that contains `python.envFile` and `python.terminal.activateEnvironment` so VS Code loads `.env` and auto-activates environments for everyone — but DO NOT commit `python.pythonPath` (interpreter path) because that is machine-specific.
+
 
 ### API (FastAPI)
 
@@ -47,7 +87,7 @@ npm run dev
 
 Opens on `http://localhost:3001`.
 
-### Continuous Integration
+### Continuous Integration Use Description
 
 This repo includes a GitHub Actions workflow at [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
