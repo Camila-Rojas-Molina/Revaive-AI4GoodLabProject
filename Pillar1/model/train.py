@@ -1,33 +1,40 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score, classification_report
-from sklearn.preprocessing import LabelEncoder
-import xgboost as xgb
-import pickle
+from sklearn.ensemble import RandomForestClassifier
+import joblib
 import os
 
-# TODO: set DATASET_PATH once dataset is confirmed
-# Expected: CSV with columns matching RISK_FEATURES + 'pod_label' (0 or 1)
-DATASET_PATH = "Pillar1/data/dataset.csv"
-MODEL_OUT = os.path.join(os.path.dirname(__file__), "model.pkl")
+DATASET_PATH = "Pillar1/data/pod_dataset.csv"  # update to your actual filename
+MODEL_OUT = os.path.join(os.path.dirname(__file__), "model", "model.pkl")
 
-CATEGORICAL_COLS = ["sex", "surgery_type"]
+GENDER_MAP = {"F": 0, "M": 1}
+ADMISSION_TYPE_MAP = {
+    "DIRECT EMER.": 0, "ELECTIVE": 1, "EW EMER.": 2,
+    "SURGICAL SAME DAY ADMISSION": 3, "URGENT": 4,
+}
+SURGICAL_CATEGORY_MAP = {"Neurosurgery": 0, "Other": 1, "Unknown": 2}
 
 
 def train():
     df = pd.read_csv(DATASET_PATH)
 
-    for col in CATEGORICAL_COLS:
-        le = LabelEncoder()
-        df[col] = le.fit_transform(df[col].fillna("unknown"))
+    df["gender_enc"] = df["gender"].map(GENDER_MAP)
+    df["admission_enc"] = df["admission_type"].map(ADMISSION_TYPE_MAP)
+    df["surgical_enc"] = df["surgical_category"].map(SURGICAL_CATEGORY_MAP)
 
-    feature_cols = ["age", "sex", "surgery_type", "anesthesia_duration_min", "comorbidity_count", "baseline_orientation_score"]
+    feature_cols = [
+        "anchor_age", "gender_enc", "admission_enc",
+        "prior_delirium", "dementia", "surgical_enc"
+    ]
     X = df[feature_cols].fillna(0)
-    y = df["pod_label"]
+    y = df["POD_label"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, stratify=y, random_state=42
+    )
 
-    model = xgb.XGBClassifier(n_estimators=100, max_depth=4, use_label_encoder=False, eval_metric="logloss", random_state=42)
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
 
     y_pred_proba = model.predict_proba(X_test)[:, 1]
@@ -36,8 +43,8 @@ def train():
     print(f"AUC-ROC: {roc_auc_score(y_test, y_pred_proba):.3f}")
     print(classification_report(y_test, y_pred))
 
-    with open(MODEL_OUT, "wb") as f:
-        pickle.dump(model, f)
+    os.makedirs(os.path.dirname(MODEL_OUT), exist_ok=True)
+    joblib.dump(model, MODEL_OUT)
     print(f"Model saved to {MODEL_OUT}")
 
 

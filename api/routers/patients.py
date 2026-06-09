@@ -4,7 +4,8 @@ from pydantic import BaseModel
 from typing import Optional
 from supabase import create_client
 from api.middleware.auth import get_current_user
-from api.routers.risk import compute_risk_rule_based
+from api.routers.risk import model, GENDER_MAP, ADMISSION_TYPE_MAP, SURGICAL_CATEGORY_MAP
+import pandas as pd
 
 router = APIRouter()
 
@@ -15,22 +16,35 @@ def _db():
 
 class PatientCreate(BaseModel):
     name: str
-    age: Optional[int] = None
-    sex: Optional[str] = None
-    surgery_type: Optional[str] = None
-    anesthesia_duration_min: Optional[float] = None
-    comorbidity_count: Optional[int] = 0
-    baseline_orientation_score: Optional[float] = None
+    anchor_age: Optional[int] = None
+    gender: Optional[str] = None
+    admission_type: Optional[str] = None
+    prior_delirium: Optional[int] = 0
+    dementia: Optional[int] = 0
+    surgical_category: Optional[str] = None
 
 
 @router.post("")
 async def create_patient(patient: PatientCreate, user=Depends(get_current_user)):
-    risk = compute_risk_rule_based(patient.model_dump())
+    # Run real model prediction
+    features = pd.DataFrame([{
+        "anchor_age": patient.anchor_age or 0,
+        "gender": GENDER_MAP.get(patient.gender, 0),
+        "admission_type": ADMISSION_TYPE_MAP.get(patient.admission_type, 2),
+        "prior_delirium": patient.prior_delirium,
+        "dementia": patient.dementia,
+        "surgical_category": SURGICAL_CATEGORY_MAP.get(patient.surgical_category, 1),
+    }])
+    prediction = model.predict(features)[0]
+    proba = model.predict_proba(features)[0]
+    label = {0: "low", 1: "high"}[int(prediction)]
+    confidence = round(float(max(proba)), 3)
+
     db = _db()
     result = db.table("patients").insert({
         **patient.model_dump(),
-        "pod_risk_label": risk["label"],
-        "pod_risk_score": risk["score"],
+        "pod_risk_label": label,
+        "pod_risk_score": confidence,
         "assigned_nurse_id": str(user.id),
     }).execute()
     return result.data[0]
@@ -38,7 +52,6 @@ async def create_patient(patient: PatientCreate, user=Depends(get_current_user))
 
 @router.get("/me")
 async def get_my_patient_record(user=Depends(get_current_user)):
-    """Returns the patient record for the currently authenticated patient user."""
     db = _db()
     result = (
         db.table("patients")

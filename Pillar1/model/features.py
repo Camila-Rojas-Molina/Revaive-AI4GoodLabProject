@@ -1,9 +1,8 @@
 RISK_FEATURES = {
-    "age": "int",
-    "sex": "binary",                        # 0=F, 1=M
-    "surgery_type": "categorical",          # cardiac, orthopedic, abdominal, other
-    "anesthesia_duration_min": "float",
-    "comorbidity_count": "int",
-    "baseline_orientation_score": "float",  # 0–10
+    "anchor_age": "int",
+    "gender": "binary",           # "F" or "M"
+    "admission_type": "categorical",  # "ELECTIVE", "EW EMER.", "URGENT", "DIRECT EMER.", "SURGICAL SAME DAY ADMISSION"
+    "prior_delirium": "binary",   # 0 or 1
+    "dementia": "binary",         # 0 or 1
+    "surgical_category": "categorical",  # "Neurosurgery", "Other", "Unknown"
 }
-# TODO: update feature list once dataset is confirmed
