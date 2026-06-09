@@ -1,8 +1,8 @@
-# CogBridge
+# Revaive
 
 AI prototype for Postoperative Delirium (POD) detection and cognitive monitoring, built for AI4Good Lab 2025.
 
-Team: Joyanne Ma, Ken Sun, Amy Dao, Norah Njonjo, Camila Rojas
+Team: Joyanne Ma, Amy Dao, Norah Njonjo, Camila Rojas
 
 ## Architecture
 
