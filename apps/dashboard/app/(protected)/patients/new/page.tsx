@@ -132,7 +132,7 @@ export default function NewPatientPage() {
         <Card style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
             color: 'var(--text-faint)', marginBottom: 14 }}>Recommended next steps</div>
-          {['Enrol in daily CogBridge sessions', 'Share plan with patient & family', 'Schedule 48-hour re-screen'].map((s, i) => (
+          {['Enrol in daily Revaive sessions', 'Share plan with patient & family', 'Schedule 48-hour re-screen'].map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0',
               borderBottom: i < 2 ? '1px solid var(--line)' : 'none' }}>
               <span style={{ color: 'var(--good)' }}><Icon name="checkCircle" size={24} /></span>

@@ -372,7 +372,7 @@ export const TopBar = ({ title, brand, left, right, sub }: {
       {brand ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, color: 'var(--primary)' }}>
           <Icon name="logo" size={30} />
-          <span style={{ fontWeight: 800, fontSize: 23, letterSpacing: '-.02em' }}>CogBridge</span>
+          <span style={{ fontWeight: 800, fontSize: 23, letterSpacing: '-.02em' }}>Revaive</span>
         </div>
       ) : (
         <div style={{ minWidth: 0 }}>

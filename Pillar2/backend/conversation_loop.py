@@ -66,7 +66,7 @@ def post_session_to_api(patient_id: str, transcript: str, duration_seconds: int,
 def run_conversation(patient_id: str):
     patient_profile = load_patient(patient_id)
     print(f"Loaded profile: {patient_profile}")
-    print("CogBridge is ready. Start speaking...")
+    print("Revaive is ready. Start speaking...")
     conversation_history = []
     full_turns: list[str] = []
     start_time = time.time()
@@ -89,9 +89,9 @@ def run_conversation(patient_id: str):
         conversation_history.append({"role": "user", "content": transcript})
         response = get_response(transcript, conversation_history[:-1], patient_profile)
         conversation_history.append({"role": "assistant", "content": response})
-        full_turns.append(f"CogBridge: {response}")
+        full_turns.append(f"Revaive: {response}")
 
-        print(f"CogBridge: {response}")
+        print(f"Revaive: {response}")
 
         audio_file = text_to_speech(response)
         subprocess.run(["afplay", audio_file])

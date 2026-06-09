@@ -57,7 +57,7 @@ export default function ProfilePage() {
 
       <SectionLabel>Support</SectionLabel>
       <Card pad={6} style={{ marginBottom: 24 }}>
-        <SettingsRow icon="info" title="About CogBridge" sub="Version 1.0 · Cognitive companion">
+        <SettingsRow icon="info" title="About Revaive" sub="Version 1.0 · Cognitive companion">
           <Icon name="chevRight" size={22} style={{ color: 'var(--text-faint)' }} />
         </SettingsRow>
       </Card>

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.routers import patients, sessions, risk, scores, reports
 
-app = FastAPI(title="CogBridge API")
+app = FastAPI(title="Revaive API")
 
 app.add_middleware(
     CORSMiddleware,

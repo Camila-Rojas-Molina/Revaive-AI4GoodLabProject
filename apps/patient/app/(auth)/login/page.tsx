@@ -63,7 +63,7 @@ export default function LoginPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--primary)',
           marginBottom: 10 }}>
           <Icon name="logo" size={44} />
-          <span style={{ fontWeight: 800, fontSize: 38, letterSpacing: '-.02em' }}>CogBridge</span>
+          <span style={{ fontWeight: 800, fontSize: 38, letterSpacing: '-.02em' }}>Revaive</span>
         </div>
         <p style={{ fontSize: 20, color: 'var(--text-muted)', margin: '0 0 40px' }}>
           Your daily companion

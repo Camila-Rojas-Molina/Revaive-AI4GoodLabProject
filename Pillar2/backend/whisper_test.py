@@ -7,7 +7,7 @@ transcript = transcribe_audio("/Users/joyannema/Desktop/202 Av Coolbreeze 104.m4
 print(f"You said: {transcript}")
 
 response = get_response(transcript, [])
-print(f"CogBridge: {response}")
+print(f"Revaive: {response}")
 
 audio_file = text_to_speech(response)
 print(f"Audio saved to: {audio_file}")

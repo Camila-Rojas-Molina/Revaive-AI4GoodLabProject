@@ -38,7 +38,7 @@ export default function LoginPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--primary)',
           justifyContent: 'center', marginBottom: 14 }}>
           <Icon name="logo" size={48} />
-          <span style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-.02em' }}>CogBridge</span>
+          <span style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-.02em' }}>Revaive</span>
         </div>
         <p style={{ textAlign: 'center', fontSize: 18, color: 'var(--text-muted)', margin: '0 0 40px' }}>
           Cognitive recovery, together.

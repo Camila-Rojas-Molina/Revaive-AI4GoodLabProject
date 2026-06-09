@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CogBridge — Nurse Dashboard',
+  title: 'Revaive — Nurse Dashboard',
   description: 'Postoperative Delirium Monitoring',
 }
 

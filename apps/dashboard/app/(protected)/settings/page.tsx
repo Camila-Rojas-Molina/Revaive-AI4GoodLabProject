@@ -42,7 +42,7 @@ export default function SettingsPage() {
           <Icon name="chevRight" size={22} style={{ color: 'var(--text-faint)' }} />
         </SettingsRow>
         <Divider />
-        <SettingsRow icon="info" title="About CogBridge" sub="Version 1.0 · Clinical decision support">
+        <SettingsRow icon="info" title="About Revaive" sub="Version 1.0 · Clinical decision support">
           <Icon name="chevRight" size={22} style={{ color: 'var(--text-faint)' }} />
         </SettingsRow>
       </Card>
