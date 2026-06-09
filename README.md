@@ -49,7 +49,11 @@ pip install -r requirements.txt
 
 5. Install frontend dependencies (dashboard and patient):
 
-(This is underneath, keep scrolling)
+(This is underneath, keep scrolling) 
+    first: API (uvicorn)
+    second: Dashboard app 
+    Third Patient app
+    Commands are below
 
 6. In VS Code: open the repository, then run the Command Palette → "Python: Select Interpreter" → choose the `.venv` interpreter. New terminals will auto-activate the environment if `python.terminal.activateEnvironment` is enabled.
 
