@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { Icon, Button, Field, TextInput } from '@/components/ui'
 
 type Step = 'form' | 'sent'
 
@@ -32,18 +33,23 @@ export default function LoginPage() {
 
   if (step === 'sent') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-        <div className="text-5xl mb-6">✉️</div>
-        <h1 className="text-2xl font-semibold mb-3">Check your email</h1>
-        <p className="text-lg text-gray-600 max-w-xs leading-relaxed">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', padding: '0 var(--pad)', textAlign: 'center' }}>
+        <div style={{ fontSize: 64, marginBottom: 24 }}>✉️</div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600,
+          color: 'var(--text)', margin: '0 0 12px' }}>
+          Check your email
+        </h1>
+        <p style={{ fontSize: 19, color: 'var(--text-muted)', maxWidth: 320, lineHeight: 1.5, margin: '0 0 16px' }}>
           We sent a sign-in link to<br />
-          <span className="font-medium text-gray-900">{email}</span>
+          <span style={{ fontWeight: 700, color: 'var(--text)' }}>{email}</span>
         </p>
-        <p className="mt-4 text-base text-gray-500">Tap the link in that email to continue.</p>
-        <button
-          onClick={() => setStep('form')}
-          className="mt-8 text-sm text-blue-600 underline"
-        >
+        <p style={{ fontSize: 17, color: 'var(--text-faint)', marginBottom: 32 }}>
+          Tap the link in that email to continue.
+        </p>
+        <button onClick={() => setStep('form')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)',
+            fontFamily: 'var(--font-ui)', fontSize: 16, fontWeight: 600, textDecoration: 'underline' }}>
           Use a different email
         </button>
       </div>
@@ -51,38 +57,35 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-semibold mb-2">CogBridge</h1>
-        <p className="text-lg text-gray-500 mb-10">Your daily companion</p>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', padding: '0 var(--pad)' }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--primary)',
+          marginBottom: 10 }}>
+          <Icon name="logo" size={44} />
+          <span style={{ fontWeight: 800, fontSize: 38, letterSpacing: '-.02em' }}>CogBridge</span>
+        </div>
+        <p style={{ fontSize: 20, color: 'var(--text-muted)', margin: '0 0 40px' }}>
+          Your daily companion
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-lg font-medium text-gray-800 mb-2">
-              Your email address
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              placeholder="you@example.com"
-              className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-blue-500"
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <Field label="Your email address" htmlFor="l-email">
+            <TextInput id="l-email" type="email" value={email} onChange={setEmail}
+              placeholder="you@example.com" />
+          </Field>
+
           {error && (
-            <p className="text-base text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
+              border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
+              borderRadius: 'var(--r-sm)', padding: '12px 16px', marginBottom: 16 }}>
               {error}
-            </p>
+            </div>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
+
+          <Button full size="lg" loading={loading}>
             {loading ? 'Sending…' : 'Send me a link'}
-          </button>
+          </Button>
         </form>
       </div>
     </div>

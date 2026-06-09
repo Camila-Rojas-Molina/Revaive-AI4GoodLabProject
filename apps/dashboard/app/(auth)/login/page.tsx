@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { Icon, Button, Field, TextInput } from '@/components/ui'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -29,46 +30,47 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1">CogBridge</h1>
-        <p className="text-sm text-gray-500 mb-7">Nurse Dashboard</p>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg)',
+      padding: '0 var(--pad)', overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        maxWidth: 520, width: '100%', margin: '0 auto', padding: '60px 0' }}>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--primary)',
+          justifyContent: 'center', marginBottom: 14 }}>
+          <Icon name="logo" size={48} />
+          <span style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-.02em' }}>CogBridge</span>
+        </div>
+        <p style={{ textAlign: 'center', fontSize: 18, color: 'var(--text-muted)', margin: '0 0 40px' }}>
+          Cognitive recovery, together.
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11, justifyContent: 'center',
+          color: 'var(--primary)', background: 'var(--primary-soft)', borderRadius: 'var(--r-md)',
+          padding: '14px 20px', marginBottom: 30, fontSize: 16, fontWeight: 600 }}>
+          <Icon name="stethoscope" size={22} />
+          Clinician sign-in
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <Field label="Email" htmlFor="l-email">
+            <TextInput id="l-email" type="email" value={email} onChange={setEmail} placeholder="you@hospital.org" />
+          </Field>
+          <Field label="Password" htmlFor="l-pw">
+            <TextInput id="l-pw" type="password" value={password} onChange={setPassword} />
+          </Field>
+
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
+              border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
+              borderRadius: 'var(--r-sm)', padding: '12px 16px', marginBottom: 8 }}>
               {error}
-            </p>
+            </div>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+
+          <div style={{ height: 10 }} />
+          <Button full size="lg" iconRight="arrowRight" loading={loading}>
+            Sign in to ward
+          </Button>
         </form>
       </div>
     </div>
