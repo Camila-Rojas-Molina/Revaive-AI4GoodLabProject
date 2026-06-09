@@ -98,17 +98,17 @@ This repo includes a GitHub Actions workflow at [.github/workflows/ci.yml](.gith
 It runs automatically on pushes and pull requests and does the following:
 
 - installs Python dependencies from `requirements.txt`
-- runs `npm ci` and `npm run build` in `apps/dashboard`
-- runs `npm ci` and `npm run build` in `apps/patient`
+- runs `npm ci` and `npm run build` in the merged Next.js app in `apps/dashboard`
 
 For local clean installs that match CI, run:
 
 ```bash
 cd apps/dashboard && npm ci
-cd ../patient && npm ci
 ```
 
 Use `npm install` only when you intentionally need to update the lockfile.
+
+If `apps/patient` is still present in the repository for reference, it is no longer part of the hackathon deploy path.
 
 ### Pillar 2 voice session
 
