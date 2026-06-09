@@ -1,32 +1,75 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Icon, Button, Field, TextInput } from '@/components/ui'
 
+type Role = 'patient' | 'nurse'
+type Step = 'form' | 'sent'
+
 export default function LoginPage() {
+  const [role, setRole] = useState<Role>('patient')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [step, setStep] = useState<Step>('form')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => { setError(null) }, [role])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
-
     const supabase = createClient()
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (authError) {
-      setError(authError.message)
-      setLoading(false)
+    if (role === 'nurse') {
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+      if (authError) { setError(authError.message); setLoading(false); return }
+      // Detect role then redirect
+      const { data: { session } } = await supabase.auth.getSession()
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/me`, {
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+        router.push(res.ok ? '/session' : '/dashboard')
+      } catch {
+        router.push('/dashboard')
+      }
     } else {
-      router.push('/dashboard')
-      router.refresh()
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (authError) { setError(authError.message); setLoading(false); return }
+      setStep('sent')
     }
+  }
+
+  if (step === 'sent') {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', padding: '0 var(--pad)', textAlign: 'center' }}>
+        <div style={{ fontSize: 64, marginBottom: 24 }}>✉️</div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600,
+          color: 'var(--text)', margin: '0 0 12px' }}>Check your email</h1>
+        <p style={{ fontSize: 19, color: 'var(--text-muted)', maxWidth: 320, lineHeight: 1.5, margin: '0 0 16px' }}>
+          We sent a sign-in link to<br />
+          <span style={{ fontWeight: 700, color: 'var(--text)' }}>{email}</span>
+        </p>
+        <p style={{ fontSize: 17, color: 'var(--text-faint)', marginBottom: 32 }}>Tap the link in that email to continue.</p>
+        <button onClick={() => setStep('form')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)',
+            fontFamily: 'var(--font-ui)', fontSize: 16, fontWeight: 600, textDecoration: 'underline' }}>
+          Use a different email
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -44,20 +87,37 @@ export default function LoginPage() {
           Cognitive recovery, together.
         </p>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11, justifyContent: 'center',
-          color: 'var(--primary)', background: 'var(--primary-soft)', borderRadius: 'var(--r-md)',
-          padding: '14px 20px', marginBottom: 30, fontSize: 16, fontWeight: 600 }}>
-          <Icon name="stethoscope" size={22} />
-          Clinician sign-in
+        {/* Role selector */}
+        <div role="tablist" aria-label="Sign in as"
+          style={{ display: 'flex', gap: 8, padding: 6, background: 'var(--surface-2)',
+            borderRadius: 'var(--r-md)', marginBottom: 30 }}>
+          {([['patient', "I'm a patient", 'heart'], ['nurse', "I'm a clinician", 'stethoscope']] as const).map(([id, label, ic]) => {
+            const on = role === id
+            return (
+              <button key={id} role="tab" aria-selected={on} onClick={() => setRole(id)}
+                style={{ flex: 1, minHeight: 56, borderRadius: 13, border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 17,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+                  background: on ? 'var(--surface)' : 'transparent',
+                  color: on ? 'var(--primary)' : 'var(--text-muted)',
+                  boxShadow: on ? 'var(--shadow-card)' : 'none', transition: 'all .18s' }}>
+                <Icon name={ic} size={21} />{label}
+              </button>
+            )
+          })}
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <Field label="Email" htmlFor="l-email">
-            <TextInput id="l-email" type="email" value={email} onChange={setEmail} placeholder="you@hospital.org" />
+            <TextInput id="l-email" type="email" value={email} onChange={setEmail}
+              placeholder={role === 'nurse' ? 'you@hospital.org' : 'you@example.com'} />
           </Field>
-          <Field label="Password" htmlFor="l-pw">
-            <TextInput id="l-pw" type="password" value={password} onChange={setPassword} />
-          </Field>
+
+          {role === 'nurse' && (
+            <Field label="Password" htmlFor="l-pw">
+              <TextInput id="l-pw" type="password" value={password} onChange={setPassword} />
+            </Field>
+          )}
 
           {error && (
             <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
@@ -69,7 +129,7 @@ export default function LoginPage() {
 
           <div style={{ height: 10 }} />
           <Button full size="lg" iconRight="arrowRight" loading={loading}>
-            Sign in to ward
+            {role === 'patient' ? 'Send me a link' : 'Sign in to ward'}
           </Button>
         </form>
       </div>

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Revaive — Nurse Dashboard',
-  description: 'Postoperative Delirium Monitoring',
+  title: 'Revaive',
+  description: 'Cognitive recovery, together.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
