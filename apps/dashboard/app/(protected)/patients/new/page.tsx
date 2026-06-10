@@ -7,9 +7,10 @@ import {
   Screen, TopBar, IconButton, Button, Card, Field,
   TextInput, CBSelect, SegRadio, Stepper, LoadingOverlay, Icon, toneVar,
 } from '@/components/ui'
+import { createPatientAccount } from './actions'
 
 type RiskResult = { level: 'Low' | 'Moderate' | 'High'; tone: 'good' | 'warn' | 'danger'; score: number }
-type FormData = { name: string; age: number; gender: string; admission: string; surgical: string; priorDelirium: string; dementia: string }
+type FormData = { name: string; age: number; gender: string; admission: string; surgical: string; priorDelirium: string; dementia: string; email: string }
 type Step = 'form' | 'calculating' | 'result'
 
 const GENDER = ['Female', 'Male', 'Non-binary', 'Prefer not to say']
@@ -40,10 +41,11 @@ const COPY: Record<string, string> = {
 export default function NewPatientPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>('form')
-  const [f, setF] = useState<FormData>({ name: '', age: 70, gender: '', admission: '', surgical: '', priorDelirium: '', dementia: '' })
+  const [f, setF] = useState<FormData>({ name: '', age: 70, gender: '', admission: '', surgical: '', priorDelirium: '', dementia: '', email: '' })
   const [errs, setErrs] = useState<Partial<Record<keyof FormData, string>>>({})
   const [result, setResult] = useState<RiskResult | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const set = (k: keyof FormData, v: string | number) => {
     setF(s => ({ ...s, [k]: v }))
@@ -71,19 +73,42 @@ export default function NewPatientPage() {
   const save = async () => {
     if (!result) return
     setSaving(true)
+    setSaveError(null)
     try {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/login'); return }
 
-      const comorbidities = [f.priorDelirium === 'Yes' ? 1 : 0, f.dementia === 'Yes' ? 1 : 0].reduce((a, b) => a + b, 0)
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ name: f.name, age: f.age, sex: f.gender, surgery_type: f.surgical, comorbidity_count: comorbidities }),
+        body: JSON.stringify({
+          name: f.name,
+          anchor_age: f.age,
+          gender: f.gender,
+          admission_type: f.admission,
+          surgical_category: f.surgical,
+          prior_delirium: f.priorDelirium === 'Yes' ? 1 : 0,
+          dementia: f.dementia === 'Yes' ? 1 : 0,
+        }),
       })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setSaveError(body?.detail ?? `Failed to save patient (${res.status}). Make sure the API server is running.`)
+        setSaving(false)
+        return
+      }
+
+      const patient = await res.json()
+
+      if (f.email.trim()) {
+        await createPatientAccount(f.email.trim(), f.name, patient.id)
+      }
+
       router.push('/dashboard')
     } catch {
+      setSaveError('Could not reach the API server. Make sure it is running on localhost:8000.')
       setSaving(false)
     }
   }
@@ -141,6 +166,13 @@ export default function NewPatientPage() {
           ))}
         </Card>
 
+        {saveError && (
+          <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
+            border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
+            borderRadius: 'var(--r-sm)', padding: '12px 16px', marginBottom: 12 }}>
+            {saveError}
+          </div>
+        )}
         <Button full size="lg" icon={saving ? undefined : 'check'} loading={saving} onClick={save}>
           {saving ? 'Saving…' : 'Save & add to ward list'}
         </Button>
@@ -175,6 +207,9 @@ export default function NewPatientPage() {
         </Field>
         <Field label="Gender" required error={errs.gender}>
           <CBSelect value={f.gender} onChange={v => set('gender', v)} options={GENDER} placeholder="Select gender" error={errs.gender} />
+        </Field>
+        <Field label="Patient email" htmlFor="f-email" hint="Optional — creates a login so the patient can view their dashboard">
+          <TextInput id="f-email" type="email" value={f.email} onChange={v => set('email', v)} placeholder="patient@example.com" />
         </Field>
       </FormGroup>
 

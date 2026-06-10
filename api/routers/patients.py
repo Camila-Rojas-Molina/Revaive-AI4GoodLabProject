@@ -41,8 +41,18 @@ async def create_patient(patient: PatientCreate, user=Depends(get_current_user))
     confidence = round(float(max(proba)), 3)
 
     db = _db()
+    # Ensure the nurse has a profiles row (accounts created without the trigger won't have one)
+    db.table("profiles").upsert(
+        {"id": str(user.id), "role": "nurse"},
+        on_conflict="id",
+    ).execute()
+
     result = db.table("patients").insert({
-        **patient.model_dump(),
+        "name": patient.name,
+        "age": patient.anchor_age,
+        "sex": patient.gender,
+        "surgery_type": patient.surgical_category,
+        "comorbidity_count": (patient.prior_delirium or 0) + (patient.dementia or 0),
         "pod_risk_label": label,
         "pod_risk_score": confidence,
         "assigned_nurse_id": str(user.id),

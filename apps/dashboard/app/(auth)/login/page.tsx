@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Icon, Button, Field, TextInput } from '@/components/ui'
@@ -15,9 +15,8 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('form')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [codeLoading, setCodeLoading] = useState(false)
   const router = useRouter()
-
-  useEffect(() => { setError(null) }, [role])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -25,30 +24,42 @@ export default function LoginPage() {
     setError(null)
     const supabase = createClient()
 
-    if (role === 'nurse') {
-      const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-      if (authError) { setError(authError.message); setLoading(false); return }
-      // Detect role then redirect
-      const { data: { session } } = await supabase.auth.getSession()
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/me`, {
-          headers: { Authorization: `Bearer ${session?.access_token}` },
-        })
-        router.push(res.ok ? '/session' : '/dashboard')
-      } catch {
-        router.push('/dashboard')
-      }
-    } else {
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-      if (authError) { setError(authError.message); setLoading(false); return }
-      setStep('sent')
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    if (authError) { setError(authError.message); setLoading(false); return }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user!.id)
+      .single()
+
+    if (profile?.role && profile.role !== role) {
+      await supabase.auth.signOut()
+      setError(role === 'patient' ? 'This account belongs to a clinician. Please select "I\'m a clinician".' : 'This account belongs to a patient. Please select "I\'m a patient".')
+      setLoading(false)
+      return
     }
+
+    window.location.href = '/'
+  }
+
+  async function handleSendCode() {
+    if (!email) { setError('Please enter your email first.'); return }
+    setCodeLoading(true)
+    setError(null)
+    const supabase = createClient()
+
+    const { error: authError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    setCodeLoading(false)
+    if (authError) { setError(authError.message); return }
+    setStep('sent')
   }
 
   if (step === 'sent') {
@@ -94,7 +105,7 @@ export default function LoginPage() {
           {([['patient', "I'm a patient", 'heart'], ['nurse', "I'm a clinician", 'stethoscope']] as const).map(([id, label, ic]) => {
             const on = role === id
             return (
-              <button key={id} role="tab" aria-selected={on} onClick={() => setRole(id)}
+              <button key={id} role="tab" aria-selected={on} onClick={() => { setRole(id); setError(null) }}
                 style={{ flex: 1, minHeight: 56, borderRadius: 13, border: 'none', cursor: 'pointer',
                   fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 17,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
@@ -110,14 +121,20 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <Field label="Email" htmlFor="l-email">
             <TextInput id="l-email" type="email" value={email} onChange={setEmail}
-              placeholder={role === 'nurse' ? 'you@hospital.org' : 'you@example.com'} />
+              placeholder="Enter your email" />
           </Field>
 
-          {role === 'nurse' && (
-            <Field label="Password" htmlFor="l-pw">
-              <TextInput id="l-pw" type="password" value={password} onChange={setPassword} />
-            </Field>
-          )}
+          <Field label="Password" htmlFor="l-pw">
+            <TextInput id="l-pw" type="password" value={password} onChange={setPassword}
+              placeholder="Enter your password" />
+          </Field>
+
+          <button type="button" onClick={handleSendCode} disabled={codeLoading}
+            style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--primary)', fontFamily: 'var(--font-ui)', fontSize: 15, fontWeight: 600,
+              padding: '6px 0', opacity: codeLoading ? 0.6 : 1 }}>
+            {codeLoading ? 'Sending…' : 'Send me a code'}
+          </button>
 
           {error && (
             <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
@@ -129,7 +146,7 @@ export default function LoginPage() {
 
           <div style={{ height: 10 }} />
           <Button full size="lg" iconRight="arrowRight" loading={loading}>
-            {role === 'patient' ? 'Send me a link' : 'Sign in to ward'}
+            Sign in
           </Button>
         </form>
       </div>

@@ -45,21 +45,15 @@ pip install -r requirements.txt
 
 4. Create your local env file and add secrets (do NOT commit this file):
 
-    There should be a .env.local file with two supabase keys, and .env in you main folder with the OpenAI and ElevenLabs keys.
+    There should be a `.env.local` file inside `apps/dashboard/` with the Supabase keys, and a `.env` in the repo root with the OpenAI and ElevenLabs keys. See the **Environment variables** section below for the full list.
 
-5. Install frontend dependencies (dashboard and patient):
-
-(This is underneath, keep scrolling) 
-    first: API (uvicorn)
-    second: Dashboard app 
-    Third Patient app
-    Commands are below
+5. Install frontend dependencies and run the servers (commands below).
 
 6. In VS Code: open the repository, then run the Command Palette → "Python: Select Interpreter" → choose the `.venv` interpreter. New terminals will auto-activate the environment if `python.terminal.activateEnvironment` is enabled.
 
 Notes:
 - Each teammate should create their own `.venv` (do not share the `.venv` folder in version control).
-- Keep `.env` and `.venv/` in `.gitignore`; do not commit secrets or local environments. Consider adding a `.env.example` with placeholders if one is not present.
+- Keep `.env` and `.venv/` in `.gitignore`; do not commit secrets or local environments.
 - It's convenient to commit a project `.vscode/settings.json` that contains `python.envFile` and `python.terminal.activateEnvironment` so VS Code loads `.env` and auto-activates environments for everyone — but DO NOT commit `python.pythonPath` (interpreter path) because that is machine-specific.
 
 
@@ -71,7 +65,7 @@ uvicorn api.main:app --reload
 
 API docs available at `http://localhost:8000/docs`.
 
-### Nurse Dashboard
+### Dashboard (nurses + patients)
 
 ```bash
 cd apps/dashboard
@@ -79,26 +73,16 @@ npm ci
 npm run dev
 ```
 
-Opens on `http://localhost:3000`.
+Opens on `http://localhost:3000`. Both nurses and patients log in here — the app detects the role from Supabase and routes accordingly.
 
-### Patient App
-
-```bash
-cd apps/patient
-npm ci
-npm run dev
-```
-
-Opens on `http://localhost:3001`.
-
-### Continuous Integration Use Description
+### Continuous Integration
 
 This repo includes a GitHub Actions workflow at [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 It runs automatically on pushes and pull requests and does the following:
 
 - installs Python dependencies from `requirements.txt`
-- runs `npm ci` and `npm run build` in the merged Next.js app in `apps/dashboard`
+- runs `npm ci` and `npm run build` in `apps/dashboard`
 
 For local clean installs that match CI, run:
 
@@ -107,8 +91,6 @@ cd apps/dashboard && npm ci
 ```
 
 Use `npm install` only when you intentionally need to update the lockfile.
-
-If `apps/patient` is still present in the repository for reference, it is no longer part of the hackathon deploy path.
 
 ### Pillar 2 voice session
 
@@ -123,16 +105,57 @@ At session end the script automatically POSTs the result to `API_BASE_URL/sessio
 
 See `.env.example` for the full list. Required keys:
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
-| `OPENAI_API_KEY` | OpenAI key (Whisper + GPT-4o) |
-| `ELEVENLABS_API_KEY` | ElevenLabs TTS key |
-| `API_BASE_URL` | Base URL for the FastAPI backend |
-| `NEXT_PUBLIC_API_URL` | Same URL, exposed to Next.js frontend |
+| Variable | Where | Description |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `apps/dashboard/.env.local` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `apps/dashboard/.env.local` | Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | `apps/dashboard/.env.local` | Supabase service role key (server-side only, never expose to client) |
+| `NEXT_PUBLIC_API_URL` | `apps/dashboard/.env.local` | FastAPI base URL (e.g. `http://localhost:8000`) |
+| `OPENAI_API_KEY` | `.env` | OpenAI key (Whisper + GPT-4o) |
+| `ELEVENLABS_API_KEY` | `.env` | ElevenLabs TTS key |
+| `API_BASE_URL` | `.env` | Same FastAPI URL, used by Pillar 2 backend |
 
-## Database
+## Database setup
 
-Run `database/schema.sql` against your Supabase project SQL editor to create all tables and RLS policies.
+### 1. Run the schema
+
+Paste the full contents of `database/schema.sql` into the **Supabase SQL Editor** and click Run. This creates all tables (`profiles`, `patients`, `sessions`, `session_features`, `reports`), row-level security policies, and a trigger that auto-creates a `profiles` row whenever a new auth user is created with a `role` field in their metadata.
+
+### 2. Grant read access to the profiles table
+
+Run this in the SQL Editor:
+
+```sql
+GRANT SELECT ON public.profiles TO authenticated;
+```
+
+Then add an RLS policy so users can read their own profile:
+
+```sql
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own profile"
+  ON profiles FOR SELECT
+  USING (id = auth.uid());
+```
+
+### 3. Create user accounts
+
+**Nurses** must be created manually in Supabase → Authentication → Users. After creating a nurse account, insert their profiles row in the SQL Editor:
+
+```sql
+insert into profiles (id, role)
+values ('paste-nurse-uuid-here', 'nurse');
+```
+
+The UUID is shown on the user's detail page in Authentication → Users.
+
+**Patients** are created automatically when a nurse fills in the optional email field on the New Assessment form. This creates a Supabase account for the patient (no confirmation email sent) and links their clinical record to their login. Patients can then sign in using "Send me a code" on the login page.
+
+## Login flow
+
+Both nurses and patients use the same login page at `/login`:
+
+- **Email + password** — use the Sign in button. The app reads `profiles.role` after login and routes nurses to `/dashboard` and patients to `/session`.
+- **Send me a code** — sends a magic link to the email (useful for patients who don't have a password set).
+- The role toggle (I'm a patient / I'm a clinician) is enforced — logging in with the wrong role shows an error.

@@ -13,13 +13,14 @@ from gpt_service import get_response
 from elevenlabs_service import text_to_speech
 from patient_service import load_patient
 from cognitive_scorer import Turn, score_session, session_to_dict
+from distress_detector import check_distress
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'cst'))
 from cst.cst_manager import get_theme_by_score, get_difficulty
 
 SAMPLE_RATE = 16000
-SILENCE_THRESHOLD = 0.01
-SILENCE_DURATION = 2
+SILENCE_THRESHOLD = 0.015  # raised slightly so brief breath pauses don't trigger early cutoff
+SILENCE_DURATION = 3       # wait 3 seconds of quiet before treating it as end of turn
 
 
 def record_until_silence():
@@ -50,7 +51,6 @@ def save_audio(audio):
     sf.write(tmp.name, audio, SAMPLE_RATE)
     return tmp.name
 
-
 def post_session_to_api(
     patient_id: str,
     scored,
@@ -58,6 +58,7 @@ def post_session_to_api(
     theme: str,
     difficulty: str,
     full_transcript: str,
+    flag_escalate: bool = False,
 ):
     api_url = os.getenv("API_BASE_URL", "http://localhost:8000")
     d = session_to_dict(scored)
@@ -68,11 +69,9 @@ def post_session_to_api(
         "duration_seconds": duration_seconds,
         "theme": theme,
         "difficulty": difficulty,
-        # scored fields
         "cognitive_score": d["cognitive_recovery_index"],
-        "flag_escalate": d["flag_for_review"],
+        "flag_escalate": flag_escalate,
         "component_scores": d["component_scores"],
-        # individual features — mapped to session_features table columns
         "features": {
             "speech_rate_wpm":  d["features"]["speech_rate_wpm"],
             "type_token_ratio": d["features"]["type_token_ratio"],
@@ -85,8 +84,9 @@ def post_session_to_api(
     try:
         response = requests.post(f"{api_url}/sessions", json=payload)
         data = response.json()
-        cri = d["cognitive_recovery_index"]
-        print(f"\nSession logged. CRI: {cri}/100")
+        score = data.get('cognitive_score', d["cognitive_recovery_index"])
+        flag_note = " — NURSE ALERTED (distress detected)" if flag_escalate else ""
+        print(f"\nSession logged. Cognitive score: {score}/100{flag_note}")
         if d["flag_for_review"]:
             print("⚠️  Score dropped significantly — flagged for nurse review.")
     except Exception as e:
@@ -104,6 +104,7 @@ def run_conversation(patient_id: str):
     session_base = datetime.utcnow()   # anchor for Whisper's relative timestamps
     start_time = time.time()
     elapsed_seconds = 0.0              # running offset so timestamps stay monotonic
+    flag_escalate = False
 
     while True:
         # ── Record patient audio ──────────────────────────────────────────
@@ -115,6 +116,11 @@ def run_conversation(patient_id: str):
         print("Processing...")
         result = transcribe_audio(audio_path)
         os.unlink(audio_path)
+
+        # Audio confidence gate — garbled or muffled recording
+        if result is None:
+            print("Audio unclear, listening again...")
+            continue
 
         patient_text = result["text"]
         if not patient_text.strip():
@@ -131,6 +137,18 @@ def run_conversation(patient_id: str):
 
         print(f"You said: {patient_text}")
         plain_turns.append(f"Patient: {patient_text}")
+
+        # Distress detection — runs before AI responds
+        is_distress, matched = check_distress(patient_text)
+        if is_distress:
+            print(f"Distress detected: '{matched}' — flagging nurse and ending session.")
+            closing = "I want to make sure you're okay — I'll let your nurse know right away."
+            audio_file = text_to_speech(closing)
+            subprocess.run(["afplay", audio_file])
+            os.unlink(audio_file)
+            plain_turns.append(f"Revaive: {closing}")
+            flag_escalate = True
+            break
 
         # ── Build patient Turn ────────────────────────────────────────────
         transcript_turns.append(Turn(
@@ -165,6 +183,7 @@ def run_conversation(patient_id: str):
         print(f"CogBridge: {response_text}")
         audio_file = text_to_speech(response_text)
         subprocess.run(["afplay", audio_file])
+        os.unlink(audio_file)
 
         if any(word in patient_text.lower() for word in ["goodbye", "bye", "stop", "exit"]):
             print("Session ended.")
@@ -197,8 +216,8 @@ def run_conversation(patient_id: str):
         theme=theme,
         difficulty=difficulty,
         full_transcript=full_transcript,
+        flag_escalate=flag_escalate,
     )
-
 
 if __name__ == "__main__":
     run_conversation("5c955dcd-d937-4858-b335-5ad1862475b0")
