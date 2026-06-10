@@ -7,16 +7,14 @@ export default async function Home() {
 
   if (!user) redirect('/login')
 
-  const { data: { session } } = await supabase.auth.getSession()
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/me`, {
-      headers: { Authorization: `Bearer ${session?.access_token}` },
-      cache: 'no-store',
-    })
-    if (res.ok) redirect('/session')
-  } catch {
-    // API offline — fall through to nurse dashboard
-  }
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
 
+  console.log('[page.tsx] user.id:', user.id, '| profile:', profile, '| error:', profileError)
+
+  if (profile?.role === 'patient') redirect('/session')
   redirect('/dashboard')
 }

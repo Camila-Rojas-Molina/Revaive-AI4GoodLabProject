@@ -42,7 +42,11 @@ async def create_patient(patient: PatientCreate, user=Depends(get_current_user))
 
     db = _db()
     result = db.table("patients").insert({
-        **patient.model_dump(),
+        "name": patient.name,
+        "age": patient.anchor_age,
+        "sex": patient.gender,
+        "surgery_type": patient.surgical_category,
+        "comorbidity_count": (patient.prior_delirium or 0) + (patient.dementia or 0),
         "pod_risk_label": label,
         "pod_risk_score": confidence,
         "assigned_nurse_id": str(user.id),
