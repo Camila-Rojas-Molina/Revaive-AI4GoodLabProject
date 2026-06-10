@@ -45,6 +45,7 @@ export default function NewPatientPage() {
   const [errs, setErrs] = useState<Partial<Record<keyof FormData, string>>>({})
   const [result, setResult] = useState<RiskResult | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const set = (k: keyof FormData, v: string | number) => {
     setF(s => ({ ...s, [k]: v }))
@@ -72,6 +73,7 @@ export default function NewPatientPage() {
   const save = async () => {
     if (!result) return
     setSaving(true)
+    setSaveError(null)
     try {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
@@ -91,13 +93,22 @@ export default function NewPatientPage() {
         }),
       })
 
-      if (f.email.trim() && res.ok) {
-        const patient = await res.json()
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setSaveError(body?.detail ?? `Failed to save patient (${res.status}). Make sure the API server is running.`)
+        setSaving(false)
+        return
+      }
+
+      const patient = await res.json()
+
+      if (f.email.trim()) {
         await createPatientAccount(f.email.trim(), f.name, patient.id)
       }
 
       router.push('/dashboard')
     } catch {
+      setSaveError('Could not reach the API server. Make sure it is running on localhost:8000.')
       setSaving(false)
     }
   }
@@ -155,6 +166,13 @@ export default function NewPatientPage() {
           ))}
         </Card>
 
+        {saveError && (
+          <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
+            border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
+            borderRadius: 'var(--r-sm)', padding: '12px 16px', marginBottom: 12 }}>
+            {saveError}
+          </div>
+        )}
         <Button full size="lg" icon={saving ? undefined : 'check'} loading={saving} onClick={save}>
           {saving ? 'Saving…' : 'Save & add to ward list'}
         </Button>
