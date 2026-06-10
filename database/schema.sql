@@ -1,6 +1,15 @@
 -- Paste the ENTIRE contents of this file into the Supabase SQL Editor and click Run.
 -- Uses IF NOT EXISTS so it is safe to re-run.
 
+
+/*
+profiles        → who is this person, what role (nurse/patient)
+patients        → clinical record for a patient (linked to profiles via profile_id)
+sessions        → one row per chatbot session (linked to patients)
+session_features → speech metrics per session
+reports         → generated clinical reports per patient
+*/
+
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null check (role in ('nurse', 'patient')),
