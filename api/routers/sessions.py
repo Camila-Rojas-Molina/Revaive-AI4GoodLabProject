@@ -5,6 +5,10 @@ from typing import Optional
 from supabase import create_client
 from api.middleware.auth import get_current_user
 
+# compute_score is no longer called here — scoring now happens in the
+# voice pipeline (cognitive_scorer.py) before the POST is made.
+# This router just persists what it receives.
+
 router = APIRouter()
 
 
@@ -29,6 +33,7 @@ class SessionCreate(BaseModel):
     duration_seconds: Optional[int] = None
     theme: Optional[str] = None
     difficulty: Optional[str] = None
+    # scored fields sent by the voice pipeline
     cognitive_score: Optional[float] = None
     flag_escalate: Optional[bool] = None
     component_scores: Optional[dict] = None
@@ -37,31 +42,35 @@ class SessionCreate(BaseModel):
 
 @router.post("")
 async def create_session(session: SessionCreate):
+    # POST /sessions is open so the Pillar 2 voice pipeline can call it
+    # without a JWT. TODO: secure with a shared service key.
     db = _db()
 
+    # ── Persist the session row ───────────────────────────────────────────
     result = db.table("sessions").insert({
-        "patient_id":       session.patient_id,
-        "transcript":       session.transcript,
+        "patient_id":      session.patient_id,
+        "transcript":      session.transcript,
         "duration_seconds": session.duration_seconds,
-        "theme":            session.theme,
-        "difficulty":       session.difficulty,
-        "cognitive_score":  session.cognitive_score,
-        "flag_escalate":    session.flag_escalate or False,
+        "theme":           session.theme,
+        "difficulty":      session.difficulty,
+        "cognitive_score": session.cognitive_score,
+        "flag_escalate":   session.flag_escalate or False,
         "component_scores": session.component_scores,
     }).execute()
 
     session_row = result.data[0]
     session_id = session_row["id"]
 
+    # ── Persist the feature breakdown ─────────────────────────────────────
     if session.features:
         f = session.features
         db.table("session_features").insert({
-            "session_id":             session_id,
-            "speech_rate_wpm":        f.speech_rate_wpm,
-            "type_token_ratio":       f.type_token_ratio,
-            "recall_accuracy":        f.recall_accuracy,
-            "coherence_score":        f.coherence_score,
-            "avg_response_latency_s": f.avg_response_latency_s,
+            "session_id":       session_id,
+            "speech_rate_wpm":  f.speech_rate_wpm,
+            "type_token_ratio": f.type_token_ratio,
+            "recall_accuracy":  f.recall_accuracy,
+            # coherence and latency don't have columns yet — stored in
+            # component_scores jsonb on the sessions row instead.
         }).execute()
 
     return {**session_row, "cognitive_score": session.cognitive_score}

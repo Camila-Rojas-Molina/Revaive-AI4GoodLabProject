@@ -10,7 +10,15 @@ def _db():
         os.environ["SUPABASE_SERVICE_ROLE_KEY"],
     )
 
+
 def load_patient(patient_id: str) -> dict:
+    """
+    Load a patient record from Supabase by patient_id.
+
+    Returns a dict with all patient fields, including last_cri which the
+    voice pipeline uses to detect significant score drops between sessions.
+    Returns None if the patient is not found.
+    """
     db = _db()
     result = (
         db.table("patients")
@@ -24,7 +32,12 @@ def load_patient(patient_id: str) -> dict:
         return None
     return result.data[0]
 
+
 def save_patient(patient: dict) -> dict:
+    """
+    Insert a new patient record into Supabase.
+    Returns the inserted row (with generated id and timestamps).
+    """
     db = _db()
     result = db.table("patients").insert(patient).execute()
     return result.data[0]
