@@ -104,6 +104,13 @@ create policy "Nurses see sessions of their patients"
     select id from patients where assigned_nurse_id = auth.uid()
   ));
 
+-- Grant service_role full access to all tables (required when tables are created via raw SQL)
+grant select, insert, update, delete on public.profiles   to service_role;
+grant select, insert, update, delete on public.patients   to service_role;
+grant select, insert, update, delete on public.sessions   to service_role;
+grant select, insert, update, delete on public.session_features to service_role;
+grant select, insert, update, delete on public.reports    to service_role;
+
 -- Trigger: auto-create a profiles row whenever a new auth user is created,
 -- as long as their metadata includes a 'role' field ('nurse' or 'patient').
 create or replace function public.handle_new_user()
