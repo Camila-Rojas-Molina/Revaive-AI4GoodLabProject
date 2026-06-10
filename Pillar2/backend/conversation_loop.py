@@ -106,7 +106,7 @@ def run_conversation(patient_id: str):
             closing = "I want to make sure you're okay — I'll let your nurse know right away."
             audio_file = text_to_speech(closing)
             subprocess.run(["afplay", audio_file])
-            # os.unlink(audio_file)
+            os.unlink(audio_file)
             full_turns.append(f"Revaive: {closing}")
             flag_escalate = True
             break
@@ -120,7 +120,7 @@ def run_conversation(patient_id: str):
 
         audio_file = text_to_speech(response)
         subprocess.run(["afplay", audio_file])
-        # os.unlink(audio_file)
+        os.unlink(audio_file)
 
         if any(word in transcript.lower() for word in ["goodbye", "bye", "stop", "exit"]):
             print("Session ended.")
