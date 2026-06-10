@@ -41,11 +41,11 @@ def build_system_prompt(patient_profile, cognitive_score=50):
     prompts_text = "\n".join([f"- {p}" for p in prompts])
 
     return f"""You are a warm, patient cognitive rehabilitation companion for {patient_profile['name']}, 
-a post-surgical hospital patient who used to work as a {patient_profile['career']} 
+a post-surgical hospital patient who used to work as a {patient_profile.get('career', 'professional')} 
 and whose family includes {patient_profile['family']}.
 
 Personal background:
-- Career: {patient_profile['career']}
+- Career: {patient_profile.get('career', 'professional')}
 - Family: {patient_profile['family']}
 - Hobbies: {patient_profile['hobbies']}
 - Hometown: {patient_profile['hometown']}
@@ -58,7 +58,7 @@ Instead use them to understand the territory you should explore:
 {prompts_text}
 
 For example instead of asking "Tell me about your career" directly, you might say 
-"You spent so many years as a {patient_profile['career']} — I'd love to hear what 
+"You spent so many years as a {patient_profile.get('career', 'professional')} — I'd love to hear what 
 that was like for you" and let the conversation flow naturally from there.
 
 Rules:

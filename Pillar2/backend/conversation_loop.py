@@ -7,10 +7,12 @@ import subprocess
 import sys
 import time
 import requests
+from datetime import datetime, timedelta
 from whisper_service import transcribe_audio
 from gpt_service import get_response
 from elevenlabs_service import text_to_speech
 from patient_service import load_patient
+from cognitive_scorer import Turn, score_session, session_to_dict
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'cst'))
 from cst.cst_manager import get_theme_by_score, get_difficulty
@@ -18,6 +20,7 @@ from cst.cst_manager import get_theme_by_score, get_difficulty
 SAMPLE_RATE = 16000
 SILENCE_THRESHOLD = 0.01
 SILENCE_DURATION = 2
+
 
 def record_until_silence():
     print("Listening...")
@@ -41,24 +44,51 @@ def record_until_silence():
     audio = np.concatenate(audio_chunks)
     return audio
 
+
 def save_audio(audio):
     tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
     sf.write(tmp.name, audio, SAMPLE_RATE)
     return tmp.name
 
-def post_session_to_api(patient_id: str, transcript: str, duration_seconds: int, theme: str, difficulty: str):
+
+def post_session_to_api(
+    patient_id: str,
+    scored,
+    duration_seconds: int,
+    theme: str,
+    difficulty: str,
+    full_transcript: str,
+):
     api_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+    d = session_to_dict(scored)
+
     payload = {
         "patient_id": patient_id,
-        "transcript": transcript,
+        "transcript": full_transcript,
         "duration_seconds": duration_seconds,
         "theme": theme,
         "difficulty": difficulty,
+        # scored fields
+        "cognitive_score": d["cognitive_recovery_index"],
+        "flag_escalate": d["flag_for_review"],
+        "component_scores": d["component_scores"],
+        # individual features — mapped to session_features table columns
+        "features": {
+            "speech_rate_wpm":  d["features"]["speech_rate_wpm"],
+            "type_token_ratio": d["features"]["type_token_ratio"],
+            "recall_accuracy":  d["features"]["entity_recall_rate"],
+            "coherence_score":  d["features"]["coherence_score"],
+            "avg_response_latency_s": d["features"]["avg_response_latency_s"],
+        },
     }
+
     try:
         response = requests.post(f"{api_url}/sessions", json=payload)
         data = response.json()
-        print(f"\nSession logged. Cognitive score: {data.get('cognitive_score', 'N/A')}/100")
+        cri = d["cognitive_recovery_index"]
+        print(f"\nSession logged. CRI: {cri}/100")
+        if d["flag_for_review"]:
+            print("⚠️  Score dropped significantly — flagged for nurse review.")
     except Exception as e:
         print(f"Warning: could not post session to API: {e}")
 
@@ -66,45 +96,109 @@ def post_session_to_api(patient_id: str, transcript: str, duration_seconds: int,
 def run_conversation(patient_id: str):
     patient_profile = load_patient(patient_id)
     print(f"Loaded profile: {patient_profile}")
-    print("Revaive is ready. Start speaking...")
+    print("CogBridge is ready. Start speaking...")
+
     conversation_history = []
-    full_turns: list[str] = []
+    transcript_turns: list[Turn] = []  # structured turns for scoring
+    plain_turns: list[str] = []        # human-readable transcript for the DB
+    session_base = datetime.utcnow()   # anchor for Whisper's relative timestamps
     start_time = time.time()
+    elapsed_seconds = 0.0              # running offset so timestamps stay monotonic
 
     while True:
+        # ── Record patient audio ──────────────────────────────────────────
+        record_start = datetime.utcnow()
         audio = record_until_silence()
+        record_end = datetime.utcnow()
         audio_path = save_audio(audio)
 
         print("Processing...")
-        transcript = transcribe_audio(audio_path)
+        result = transcribe_audio(audio_path)
         os.unlink(audio_path)
 
-        if not transcript.strip():
+        patient_text = result["text"]
+        if not patient_text.strip():
             print("Didn't catch that, listening again...")
             continue
 
-        print(f"You said: {transcript}")
-        full_turns.append(f"Patient: {transcript}")
+        # Whisper returns timestamps relative to the clip start.
+        # We offset them by elapsed_seconds so they're relative to
+        # the session start instead.
+        clip_duration = (record_end - record_start).total_seconds()
+        seg_start = elapsed_seconds + result["start"]
+        seg_end   = elapsed_seconds + result["end"]
+        elapsed_seconds += clip_duration
 
-        conversation_history.append({"role": "user", "content": transcript})
-        response = get_response(transcript, conversation_history[:-1], patient_profile)
-        conversation_history.append({"role": "assistant", "content": response})
-        full_turns.append(f"Revaive: {response}")
+        print(f"You said: {patient_text}")
+        plain_turns.append(f"Patient: {patient_text}")
 
-        print(f"Revaive: {response}")
+        # ── Build patient Turn ────────────────────────────────────────────
+        transcript_turns.append(Turn(
+            speaker="patient",
+            text=patient_text,
+            timestamp_start=session_base + timedelta(seconds=seg_start),
+            timestamp_end=session_base + timedelta(seconds=seg_end),
+        ))
 
-        audio_file = text_to_speech(response)
+        # ── GPT response ──────────────────────────────────────────────────
+        conversation_history.append({"role": "user", "content": patient_text})
+        bot_start = datetime.utcnow()
+        response_text = get_response(patient_text, conversation_history[:-1], patient_profile)
+        bot_end = datetime.utcnow()
+        conversation_history.append({"role": "assistant", "content": response_text})
+
+        plain_turns.append(f"CogBridge: {response_text}")
+
+        # ── Build bot Turn ────────────────────────────────────────────────
+        # entities_in_prompt: names or places the bot explicitly mentions
+        # that the patient should recall later in the session.
+        # These are left empty for now — populate from CST theme config
+        # once that's wired up (e.g. orientation tab might inject ["Monday", "June"]).
+        transcript_turns.append(Turn(
+            speaker="bot",
+            text=response_text,
+            timestamp_start=bot_start,
+            timestamp_end=bot_end,
+            entities_in_prompt=[],
+        ))
+
+        print(f"CogBridge: {response_text}")
+        audio_file = text_to_speech(response_text)
         subprocess.run(["afplay", audio_file])
 
-        if any(word in transcript.lower() for word in ["goodbye", "bye", "stop", "exit"]):
+        if any(word in patient_text.lower() for word in ["goodbye", "bye", "stop", "exit"]):
             print("Session ended.")
             break
 
+    # ── Score the session ─────────────────────────────────────────────────
     duration_seconds = int(time.time() - start_time)
-    full_transcript = "\n".join(full_turns)
+    session_id = f"{patient_id}_{int(start_time)}"
+
+    # baseline_cri: the patient's CRI from their last session, used to
+    # detect significant drops and trigger the nurse alert flag.
+    # load_patient should return this from the DB; None on first session.
+    baseline_cri = patient_profile.get("last_cri")
+
+    scored = score_session(
+        transcript_turns,
+        patient_id=patient_id,
+        session_id=session_id,
+        baseline_cri=baseline_cri,
+    )
+
     theme = get_theme_by_score(50)
     difficulty = get_difficulty(50)
-    post_session_to_api(patient_id, full_transcript, duration_seconds, theme, difficulty)
+    full_transcript = "\n".join(plain_turns)
+
+    post_session_to_api(
+        patient_id=patient_id,
+        scored=scored,
+        duration_seconds=duration_seconds,
+        theme=theme,
+        difficulty=difficulty,
+        full_transcript=full_transcript,
+    )
+
 
 if __name__ == "__main__":
-    run_conversation("patient_001")
+    run_conversation("5c955dcd-d937-4858-b335-5ad1862475b0")

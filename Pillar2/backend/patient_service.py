@@ -1,23 +1,30 @@
-import json
 import os
+from dotenv import load_dotenv
+from supabase import create_client
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
+
+def _db():
+    return create_client(
+        os.environ["NEXT_PUBLIC_SUPABASE_URL"],
+        os.environ["SUPABASE_SERVICE_ROLE_KEY"],
+    )
 
 def load_patient(patient_id: str) -> dict:
-    path = os.path.join(os.path.dirname(__file__), "../data/patients.json")
-    with open(path, "r") as f:
-        data = json.load(f)
-    
-    for patient in data["patients"]:
-        if patient["id"] == patient_id:
-            return patient
-    
-    return None
+    db = _db()
+    result = (
+        db.table("patients")
+        .select("*")
+        .eq("id", patient_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        print(f"Warning: patient '{patient_id}' not found in database.")
+        return None
+    return result.data[0]
 
-def save_patient(patient: dict):
-    path = os.path.join(os.path.dirname(__file__), "../data/patients.json")
-    with open(path, "r") as f:
-        data = json.load(f)
-    
-    data["patients"].append(patient)
-    
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+def save_patient(patient: dict) -> dict:
+    db = _db()
+    result = db.table("patients").insert(patient).execute()
+    return result.data[0]
