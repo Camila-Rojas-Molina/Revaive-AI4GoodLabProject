@@ -25,6 +25,7 @@ class SessionFeatures(BaseModel):
     recall_accuracy: Optional[float] = None
     coherence_score: Optional[float] = None
     avg_response_latency_s: Optional[float] = None
+    avg_word_length: Optional[float] = None
 
 
 class SessionCreate(BaseModel):
@@ -69,8 +70,9 @@ async def create_session(session: SessionCreate):
             "speech_rate_wpm":  f.speech_rate_wpm,
             "type_token_ratio": f.type_token_ratio,
             "recall_accuracy":  f.recall_accuracy,
-            # coherence and latency don't have columns yet — stored in
-            # component_scores jsonb on the sessions row instead.
+            "coherence_score":        f.coherence_score,
+            "avg_response_latency_s": f.avg_response_latency_s,
+            "avg_word_length":        f.avg_word_length,
         }).execute()
 
     return {**session_row, "cognitive_score": session.cognitive_score}

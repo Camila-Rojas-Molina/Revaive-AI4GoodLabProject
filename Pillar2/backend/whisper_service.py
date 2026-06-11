@@ -20,6 +20,7 @@ def transcribe_audio(audio_file_path: str) -> dict | None:
             file=audio_file,
             response_format="verbose_json",
             timestamp_granularities=["segment"],
+            language="en",
         )
 
     segments = transcript.segments or []

@@ -78,6 +78,7 @@ def post_session_to_api(
             "recall_accuracy":  d["features"]["entity_recall_rate"],
             "coherence_score":  d["features"]["coherence_score"],
             "avg_response_latency_s": d["features"]["avg_response_latency_s"],
+            "avg_word_length":        d["features"]["avg_word_length"],
         },
     }
 
