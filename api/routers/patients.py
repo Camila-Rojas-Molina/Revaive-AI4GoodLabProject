@@ -108,3 +108,77 @@ async def get_patient(patient_id: str, _user=Depends(get_current_user)):
         .execute()
     )
     return {**patient_res.data[0], "sessions": sessions_res.data}
+
+
+class PatientUpdate(BaseModel):
+    name: Optional[str] = None
+    anchor_age: Optional[int] = None
+    gender: Optional[str] = None
+    surgical_category: Optional[str] = None
+    admission_type: Optional[str] = None
+    prior_delirium: Optional[int] = None
+    dementia: Optional[int] = None
+
+
+@router.patch("/{patient_id}")
+async def update_patient(patient_id: str, data: PatientUpdate, user=Depends(get_current_user)):
+    db = _db()
+    updates: dict = {}
+    if data.name is not None: updates["name"] = data.name
+    if data.anchor_age is not None: updates["age"] = data.anchor_age
+    if data.gender is not None: updates["sex"] = data.gender
+    if data.surgical_category is not None: updates["surgery_type"] = data.surgical_category
+    if data.prior_delirium is not None or data.dementia is not None:
+        updates["comorbidity_count"] = (data.prior_delirium or 0) + (data.dementia or 0)
+
+    # Re-run ML model if enough fields are present
+    model_fields = {
+        "anchor_age": data.anchor_age,
+        "gender": data.gender,
+        "admission_type": data.admission_type,
+        "prior_delirium": data.prior_delirium,
+        "dementia": data.dementia,
+        "surgical_category": data.surgical_category,
+    }
+    if all(v is not None for v in model_fields.values()):
+        features = pd.DataFrame([{
+            "anchor_age": model_fields["anchor_age"],
+            "gender": GENDER_MAP.get(model_fields["gender"], 0),
+            "admission_type": ADMISSION_TYPE_MAP.get(model_fields["admission_type"], 2),
+            "prior_delirium": model_fields["prior_delirium"],
+            "dementia": model_fields["dementia"],
+            "surgical_category": SURGICAL_CATEGORY_MAP.get(model_fields["surgical_category"], 1),
+        }])
+        prediction = model.predict(features)[0]
+        proba = model.predict_proba(features)[0]
+        updates["pod_risk_label"] = {0: "low", 1: "high"}[int(prediction)]
+        updates["pod_risk_score"] = round(float(max(proba)), 3)
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    result = (
+        db.table("patients").update(updates)
+        .eq("id", patient_id)
+        .eq("assigned_nurse_id", str(user.id))
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    return result.data[0]
+
+
+@router.delete("/{patient_id}")
+async def delete_patient(patient_id: str, user=Depends(get_current_user)):
+    db = _db()
+    check = (
+        db.table("patients")
+        .select("id")
+        .eq("id", patient_id)
+        .eq("assigned_nurse_id", str(user.id))
+        .limit(1)
+        .execute()
+    )
+    if not check.data:
+        raise HTTPException(status_code=404, detail="Patient not found")
+    db.table("patients").delete().eq("id", patient_id).execute()
+    return {"deleted": True}

@@ -2,15 +2,17 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
 import {
   Screen, TopBar, IconButton, BottomNav, Button, Card,
-  Pill, SearchBar, EmptyState, Icon, initials, riskTone,
+  Pill, SearchBar, EmptyState, Icon, FilterChips, KebabMenu, ConfirmDialog,
+  initials, riskTone,
 } from '@/components/ui'
 
 const NURSE_NAV = [
   { href: '/dashboard', label: 'Patients', icon: 'list' },
   { href: '/alerts', label: 'Alerts', icon: 'bell' },
-  { href: '/settings', label: 'Settings', icon: 'settings' },
+  { href: '/settings', label: 'Profile', icon: 'user' },
 ]
 
 type Patient = {
@@ -19,16 +21,36 @@ type Patient = {
   sessions: { cognitive_score: number | null; session_date: string; flag_escalate: boolean; created_at: string }[]
 }
 
-export default function NurseHome({ patients }: { patients: Patient[] }) {
+const FILTER_LABELS = ['All', 'Low', 'Moderate', 'High']
+
+export default function NurseHome({ patients: initial }: { patients: Patient[] }) {
   const [q, setQ] = useState('')
+  const [filter, setFilter] = useState('All')
+  const [patients, setPatients] = useState(initial)
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const router = useRouter()
 
   const query = q.trim().toLowerCase()
-  const filtered = patients.filter(p =>
-    !query || p.name.toLowerCase().includes(query) || (p.surgery_type || '').toLowerCase().includes(query))
 
   const counts = { low: 0, medium: 0, high: 0 }
   patients.forEach(p => counts[p.pod_risk_label]++)
+
+  const filterOptions = [
+    { label: 'All', count: patients.length },
+    { label: 'Low', count: counts.low },
+    { label: 'Moderate', count: counts.medium },
+    { label: 'High', count: counts.high },
+  ]
+
+  const filtered = patients.filter(p => {
+    const matchQ = !query || p.name.toLowerCase().includes(query) || (p.surgery_type || '').toLowerCase().includes(query)
+    const matchF = filter === 'All'
+      || (filter === 'Low' && p.pod_risk_label === 'low')
+      || (filter === 'Moderate' && p.pod_risk_label === 'medium')
+      || (filter === 'High' && p.pod_risk_label === 'high')
+    return matchQ && matchF
+  })
 
   const sorted = [...filtered].sort((a, b) => {
     const aFlag = a.sessions?.some(s => s.flag_escalate) ? 0 : 1
@@ -38,6 +60,25 @@ export default function NurseHome({ patients }: { patients: Patient[] }) {
     return (order[a.pod_risk_label] ?? 4) - (order[b.pod_risk_label] ?? 4)
   })
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      })
+      if (res.ok) {
+        setPatients(list => list.filter(p => p.id !== deleteTarget.id))
+        setDeleteTarget(null)
+      }
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <Screen
       topBar={
@@ -46,6 +87,16 @@ export default function NurseHome({ patients }: { patients: Patient[] }) {
         } />
       }
       bottomNav={<BottomNav items={NURSE_NAV} />}>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove patient?"
+        body={`${deleteTarget?.name} will be permanently removed from Ward 4B. This action can't be undone.`}
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 38,
@@ -57,22 +108,13 @@ export default function NurseHome({ patients }: { patients: Patient[] }) {
         </p>
       </div>
 
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 14 }}>
         <SearchBar value={q} onChange={setQ} placeholder="Search by name or procedure" />
       </div>
 
-      {patients.length > 0 && !query && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 20 }}>
-          {([['Low', 'good'], ['Medium', 'warn'], ['High', 'danger']] as const).map(([l, t]) => (
-            <Card key={l} pad={18} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, fontWeight: 800, color: `var(--${t === 'good' ? 'good' : t === 'warn' ? 'warn' : 'danger'})` }}>
-                {counts[l.toLowerCase() as 'low' | 'medium' | 'high']}
-              </div>
-              <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>{l} risk</div>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div style={{ marginBottom: 20 }}>
+        <FilterChips value={filter} onChange={setFilter} options={filterOptions} />
+      </div>
 
       <Button full size="lg" icon="plus" onClick={() => router.push('/patients/new')}>
         New patient assessment
@@ -80,10 +122,10 @@ export default function NurseHome({ patients }: { patients: Patient[] }) {
       <div style={{ height: 20 }} />
 
       {sorted.length === 0 ? (
-        query ? (
+        query || filter !== 'All' ? (
           <EmptyState icon="search" title="No matching patients"
-            sub={`Nothing matches "${q}". Check the spelling or clear the search.`}
-            action={<Button variant="soft" size="md" onClick={() => setQ('')}>Clear search</Button>} />
+            sub={query ? `Nothing matches "${q}".` : `No ${filter.toLowerCase()} risk patients.`}
+            action={<Button variant="soft" size="md" onClick={() => { setQ(''); setFilter('All') }}>Clear filters</Button>} />
         ) : (
           <EmptyState icon="list" title="No patients yet"
             sub="Start by adding your first patient assessment to the ward."
@@ -94,8 +136,10 @@ export default function NurseHome({ patients }: { patients: Patient[] }) {
           {sorted.map(p => {
             const ini = initials(p.name)
             const tone = riskTone(p.pod_risk_label)
-            const latest = p.sessions?.[0]
             const hasFlag = p.sessions?.some(s => s.flag_escalate)
+            const latestScore = p.sessions
+              ?.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              ?.[0]?.cognitive_score
             return (
               <Card key={p.id} onClick={() => router.push(`/patients/${p.id}`)} pad={18}
                 style={{ display: 'flex', alignItems: 'center', gap: 16,
@@ -107,11 +151,16 @@ export default function NurseHome({ patients }: { patients: Patient[] }) {
                   <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
                   <div style={{ fontSize: 14.5, color: 'var(--text-muted)' }}>
                     {p.age ? `${p.age} yrs · ` : ''}{p.surgery_type ?? 'No procedure'}
-                    {latest?.session_date ? ` · ${latest.session_date}` : ''}
+                    {latestScore != null ? ` · score ${latestScore}` : ''}
                   </div>
                 </div>
-                <Pill tone={tone}>{p.pod_risk_label}</Pill>
-                <Icon name="chevRight" size={22} style={{ color: 'var(--text-faint)' }} />
+                <Pill tone={tone}>
+                  {p.pod_risk_label === 'medium' ? 'Moderate' : p.pod_risk_label.charAt(0).toUpperCase() + p.pod_risk_label.slice(1)}
+                </Pill>
+                <KebabMenu items={[
+                  { label: 'Edit patient', icon: 'edit', onClick: () => router.push(`/patients/${p.id}/edit`) },
+                  { label: 'Delete patient', icon: 'trash', danger: true, onClick: () => setDeleteTarget(p) },
+                ]} />
               </Card>
             )
           })}

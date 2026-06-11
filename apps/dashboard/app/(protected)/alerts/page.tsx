@@ -3,7 +3,7 @@ import { Screen, TopBar, BottomNav, Card, Icon } from '@/components/ui'
 const NURSE_NAV = [
   { href: '/dashboard', label: 'Patients', icon: 'list' },
   { href: '/alerts', label: 'Alerts', icon: 'bell' },
-  { href: '/settings', label: 'Settings', icon: 'settings' },
+  { href: '/settings', label: 'Profile', icon: 'user' },
 ]
 
 const ALERTS = [

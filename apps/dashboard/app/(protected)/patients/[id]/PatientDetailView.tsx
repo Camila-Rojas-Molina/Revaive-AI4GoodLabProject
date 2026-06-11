@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
 import {
   Screen, TopBar, IconButton, Card, Pill, LineChart, Icon,
+  KebabMenu, ConfirmDialog, Button,
   initials, riskTone, toneVar,
 } from '@/components/ui'
 
@@ -25,11 +28,27 @@ export default function PatientDetailView({ patient, trend }: {
   trend: { label: string; v: number }[]
 }) {
   const router = useRouter()
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
   const tone = riskTone(patient.pod_risk_label)
   const tv = toneVar(tone)
   const ini = initials(patient.name)
   const latestSession = patient.sessions?.[0]
   const hasEscalation = patient.sessions?.some(s => s.flag_escalate)
+  const sessionCount = patient.sessions?.length ?? 0
+  const lastScore = latestSession?.cognitive_score
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/${patient.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    })
+    router.push('/dashboard')
+  }
 
   const details = [
     ['Age', patient.age ? `${patient.age} years` : '—'],
@@ -40,16 +59,29 @@ export default function PatientDetailView({ patient, trend }: {
     ['Baseline orientation', patient.baseline_orientation_score != null ? `${patient.baseline_orientation_score}/10` : '—'],
   ]
 
-  const sessionCount = patient.sessions?.length ?? 0
-  const lastScore = latestSession?.cognitive_score
-
   return (
     <Screen
       topBar={
         <TopBar title={patient.name}
           sub={`Ward 4B${sessionCount > 0 ? ` · Day ${sessionCount}` : ''}`}
-          left={<IconButton name="chevLeft" label="Back" onClick={() => router.push('/dashboard')} />} />
+          left={<IconButton name="chevLeft" label="Back" onClick={() => router.push('/dashboard')} />}
+          right={
+            <KebabMenu items={[
+              { label: 'Edit patient', icon: 'edit', onClick: () => router.push(`/patients/${patient.id}/edit`) },
+              { label: 'Delete patient', icon: 'trash', danger: true, onClick: () => setConfirmDelete(true) },
+            ]} />
+          } />
       }>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Remove patient?"
+        body={`${patient.name} will be permanently removed from Ward 4B. This action can't be undone.`}
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
 
       {hasEscalation && (
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '14px 18px',
@@ -74,7 +106,7 @@ export default function PatientDetailView({ patient, trend }: {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <Pill tone={tone}>{patient.pod_risk_label} risk</Pill>
+          <Pill tone={tone}>{patient.pod_risk_label === 'medium' ? 'Moderate' : patient.pod_risk_label} risk</Pill>
           <div style={{ fontSize: 13.5, color: 'var(--text-faint)', marginTop: 6, fontWeight: 600 }}>
             score {((patient.pod_risk_score ?? 0) * 10).toFixed(1)}/10
           </div>
@@ -97,7 +129,7 @@ export default function PatientDetailView({ patient, trend }: {
       <Card style={{ display: 'flex', marginBottom: 18, textAlign: 'center' }}>
         {[
           ['Sessions', sessionCount],
-          ['Last score', lastScore != null ? lastScore : '—'],
+          ['Cognitive score', lastScore != null ? lastScore : '—'],
           ['Adherence', sessionCount > 2 ? '86%' : '—'],
         ].map(([l, v], i) => (
           <div key={String(l)} style={{ flex: 1, borderLeft: i ? '1px solid var(--line)' : 'none', padding: '16px 8px' }}>
@@ -143,6 +175,16 @@ export default function PatientDetailView({ patient, trend }: {
           </pre>
         </Card>
       )}
+
+      {/* Edit / Delete actions */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+        <Button full size="md" icon="edit" onClick={() => router.push(`/patients/${patient.id}/edit`)}>
+          Edit patient info
+        </Button>
+        <Button full size="md" variant="outline" danger icon="trash" onClick={() => setConfirmDelete(true)}>
+          Delete
+        </Button>
+      </div>
     </Screen>
   )
 }

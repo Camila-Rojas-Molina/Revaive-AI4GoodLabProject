@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 
 /* ─── ICON ──────────────────────────────────────────────────────────── */
@@ -45,6 +46,10 @@ export const Icon = ({ name, size = 24, stroke = 2, style }: {
     search: <><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.8-3.8"/></>,
     edit: <><path d="M14.5 5.5 18.5 9.5"/><path d="M4 20l1-4L16 5a2 2 0 0 1 3 3L8 19l-4 1Z"/></>,
     stethoscope: <><path d="M6 4v5a4 4 0 0 0 8 0V4"/><path d="M10 17v0a4 4 0 0 0 8 0v-2"/><circle cx="18" cy="13" r="2"/></>,
+    trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></>,
+    dotsV: <><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></>,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></>,
+    filter: <><path d="M4 6h16M7 12h10M10 18h4"/></>,
   }
   return <svg {...p}>{paths[name] ?? null}</svg>
 }
@@ -462,6 +467,117 @@ export const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <div style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
     color: 'var(--text-faint)', margin: '4px 4px 10px' }}>
     {children}
+  </div>
+)
+
+/* ─── KEBAB MENU ─────────────────────────────────────────────────────── */
+export const KebabMenu = ({ items }: {
+  items: { label: string; icon?: string; danger?: boolean; onClick: () => void }[]
+}) => {
+  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const h = (e: MouseEvent) => {
+      const inBtn = btnRef.current?.closest('[data-kebab]')?.contains(e.target as Node)
+      const inDrop = dropRef.current?.contains(e.target as Node)
+      if (!inBtn && !inDrop) setOpen(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 8, right: window.innerWidth - r.right })
+    }
+    setOpen(o => !o)
+  }
+  return (
+    <div data-kebab="" style={{ position: 'relative' }}>
+      <button ref={btnRef} onClick={handleOpen} aria-label="More options"
+        style={{ width: 44, height: 44, borderRadius: 12,
+          border: open ? '1.5px solid var(--ring)' : '1px solid var(--line)',
+          background: open ? 'var(--primary-soft)' : 'var(--surface)',
+          color: open ? 'var(--primary)' : 'var(--text-muted)',
+          display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 }}>
+        <Icon name="dotsV" size={22} />
+      </button>
+      {open && typeof document !== 'undefined' && createPortal(
+        <div ref={dropRef} style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 300,
+          background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)',
+          boxShadow: 'var(--shadow-pop)', minWidth: 190, overflow: 'hidden' }}>
+          {items.map((it, i) => (
+            <button key={i} onClick={e => { e.stopPropagation(); it.onClick(); setOpen(false) }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                border: 'none', borderTop: i > 0 ? '1px solid var(--line)' : 'none',
+                background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                fontSize: 16, fontWeight: 600, color: it.danger ? 'var(--danger)' : 'var(--text)' }}>
+              {it.icon && <Icon name={it.icon} size={20} />}
+              {it.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+/* ─── CONFIRM DIALOG ─────────────────────────────────────────────────── */
+export const ConfirmDialog = ({ open, title, body, confirmLabel = 'Delete', loading, onConfirm, onCancel }: {
+  open: boolean; title: string; body: string
+  confirmLabel?: string; loading?: boolean; onConfirm: () => void; onCancel: () => void
+}) => {
+  if (!open) return null
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 400, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', padding: 24, background: 'rgba(0,0,0,0.45)' }} onClick={onCancel}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)',
+        padding: 28, maxWidth: 380, width: '100%', boxShadow: 'var(--shadow-pop)' }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>{title}</div>
+        <p style={{ fontSize: 15.5, color: 'var(--text-muted)', margin: '0 0 24px', lineHeight: 1.5 }}>{body}</p>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Button variant="outline" size="md" full onClick={onCancel}>Cancel</Button>
+          <Button size="md" full danger loading={loading} onClick={onConfirm}>{confirmLabel}</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── FILTER CHIPS ───────────────────────────────────────────────────── */
+export const FilterChips = ({ value, onChange, options }: {
+  value: string; onChange: (v: string) => void
+  options: { label: string; count?: number }[]
+}) => (
+  <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
+    {options.map(o => {
+      const active = value === o.label
+      return (
+        <button key={o.label} onClick={() => onChange(o.label)}
+          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 7,
+            padding: '9px 16px', borderRadius: 999, cursor: 'pointer',
+            fontFamily: 'var(--font-ui)', fontSize: 15, fontWeight: active ? 700 : 600,
+            border: active ? '1.5px solid var(--primary)' : '1px solid var(--line-strong)',
+            background: active ? 'var(--primary)' : 'var(--surface)',
+            color: active ? 'var(--on-primary)' : 'var(--text-muted)',
+            transition: 'all .15s' }}>
+          {o.label}
+          {o.count !== undefined && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              minWidth: 20, height: 20, borderRadius: 10, fontSize: 13, fontWeight: 800, padding: '0 5px',
+              background: active ? 'rgba(255,255,255,0.22)' : 'var(--surface-2)',
+              color: active ? '#fff' : 'var(--text-muted)' }}>
+              {o.count}
+            </span>
+          )}
+        </button>
+      )
+    })}
   </div>
 )
 
