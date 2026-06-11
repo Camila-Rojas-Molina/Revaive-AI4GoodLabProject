@@ -9,7 +9,7 @@ import {
 } from '@/components/ui'
 import { createPatientAccount } from './actions'
 
-type RiskResult = { level: 'Low' | 'Moderate' | 'High'; tone: 'good' | 'warn' | 'danger'; score: number }
+type RiskResult = { level: 'Low' | 'High'; tone: 'good' | 'danger'; confidence: number }
 type FormData = { name: string; age: number; gender: string; admission: string; surgical: string; priorDelirium: string; dementia: string; email: string }
 type Step = 'form' | 'calculating' | 'result'
 
@@ -20,22 +20,8 @@ const ADMISSION = ['Elective', 'Emergency', 'Urgent', 'Direct emergency', 'Same-
 const SURGICAL = ['Neurosurgery', 'Other / Not listed']
 const YNU = ['Yes', 'No', 'Unknown']
 
-function computeRisk(f: FormData): RiskResult {
-  let s = 0
-  if (f.age >= 80) s += 2; else if (f.age >= 70) s += 1
-  if (f.admission === 'Emergency') s += 2
-  else if (f.admission === 'Urgent' || f.admission === 'Direct emergency') s += 1
-  if (f.priorDelirium === 'Yes') s += 3; else if (f.priorDelirium === 'Unknown') s += 1
-  if (f.dementia === 'Yes') s += 3; else if (f.dementia === 'Unknown') s += 1
-  if (f.surgical === 'Neurosurgery') s += 2
-  if (s >= 7) return { level: 'High', tone: 'danger', score: s }
-  if (s >= 4) return { level: 'Moderate', tone: 'warn', score: s }
-  return { level: 'Low', tone: 'good', score: s }
-}
-
 const COPY: Record<string, string> = {
   Low: 'Standard monitoring. Re-screen if condition changes.',
-  Moderate: 'Initiate preventive bundle: reorientation, sleep hygiene, early mobilisation. Re-screen daily.',
   High: 'Flag to care team. Begin intensive prevention and schedule daily cognitive sessions.',
 }
 
@@ -45,6 +31,7 @@ export default function NewPatientPage() {
   const [f, setF] = useState<FormData>({ name: '', age: 70, gender: '', admission: '', surgical: '', priorDelirium: '', dementia: '', email: '' })
   const [errs, setErrs] = useState<Partial<Record<keyof FormData, string>>>({})
   const [result, setResult] = useState<RiskResult | null>(null)
+  const [savedPatientId, setSavedPatientId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -65,15 +52,9 @@ export default function NewPatientPage() {
     return Object.keys(e).length === 0
   }
 
-  const submit = () => {
+  const submit = async () => {
     if (!validate()) return
     setStep('calculating')
-    setTimeout(() => { setResult(computeRisk(f)); setStep('result') }, 950)
-  }
-
-  const save = async () => {
-    if (!result) return
-    setSaving(true)
     setSaveError(null)
     try {
       const supabase = createClient()
@@ -97,21 +78,30 @@ export default function NewPatientPage() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         setSaveError(body?.detail ?? `Failed to save patient (${res.status}). Make sure the API server is running.`)
-        setSaving(false)
+        setStep('form')
         return
       }
 
       const patient = await res.json()
-
-      if (f.email.trim()) {
-        await createPatientAccount(f.email.trim(), f.name, patient.id)
-      }
-
-      router.push('/dashboard')
+      setSavedPatientId(patient.id)
+      setResult({
+        level: patient.pod_risk_label === 'high' ? 'High' : 'Low',
+        tone: patient.pod_risk_label === 'high' ? 'danger' : 'good',
+        confidence: patient.pod_risk_score,
+      })
+      setStep('result')
     } catch {
       setSaveError('Could not reach the API server. Make sure it is running on localhost:8000.')
-      setSaving(false)
+      setStep('form')
     }
+  }
+
+  const save = async () => {
+    setSaving(true)
+    if (f.email.trim() && savedPatientId) {
+      await createPatientAccount(f.email.trim(), f.name, savedPatientId)
+    }
+    router.push('/dashboard')
   }
 
   const done = [f.name.trim(), f.gender, f.admission, f.priorDelirium, f.dementia, f.surgical].filter(Boolean).length
@@ -139,14 +129,16 @@ export default function NewPatientPage() {
               <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" strokeWidth="12" />
               <circle cx="60" cy="60" r="52" fill="none" stroke={tv} strokeWidth="12" strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 52}
-                strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(result.score / 12, 1))}
+                strokeDashoffset={2 * Math.PI * 52 * (1 - result.confidence)}
                 transform="rotate(-90 60 60)" />
             </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
               <div>
                 <div style={{ fontSize: 40, fontWeight: 800, color: tv, lineHeight: 1,
                   fontFamily: 'var(--font-display)' }}>{result.level}</div>
-                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>score {result.score}/12</div>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {result.confidence.toFixed(2)} confidence
+                </div>
               </div>
             </div>
           </div>
@@ -175,10 +167,10 @@ export default function NewPatientPage() {
           </div>
         )}
         <Button full size="lg" icon={saving ? undefined : 'check'} loading={saving} onClick={save}>
-          {saving ? 'Saving…' : 'Save & add to ward list'}
+          {saving ? 'Opening ward list…' : 'Add to ward list'}
         </Button>
         <div style={{ height: 12 }} />
-        <Button full variant="ghost" disabled={saving} onClick={() => setStep('form')}>Edit assessment</Button>
+        <Button full variant="ghost" disabled={saving} onClick={() => setStep('form')}>Back to form</Button>
       </Screen>
     )
   }

@@ -11,8 +11,7 @@ import {
 
 type Patient = {
   id: string; name: string; age: number | null; sex: string | null
-  surgery_type: string | null; anesthesia_duration_min: number | null
-  comorbidity_count: number; baseline_orientation_score: number | null
+  surgery_type: string | null
   pod_risk_label: 'high' | 'medium' | 'low'; pod_risk_score: number
   sessions: { cognitive_score: number | null; session_date: string; flag_escalate: boolean; transcript?: string }[]
 }
@@ -52,11 +51,9 @@ export default function PatientDetailView({ patient, trend }: {
 
   const details = [
     ['Age', patient.age ? `${patient.age} years` : '—'],
-    ['Sex', patient.sex ?? '—'],
-    ['Surgery', patient.surgery_type ?? '—'],
-    ['Anesthesia', patient.anesthesia_duration_min ? `${patient.anesthesia_duration_min} min` : '—'],
-    ['Comorbidities', patient.comorbidity_count ?? 0],
-    ['Baseline orientation', patient.baseline_orientation_score != null ? `${patient.baseline_orientation_score}/10` : '—'],
+    ['Gender', patient.sex ?? '—'],
+    ['Surgical category', patient.surgery_type ?? '—'],
+    ['Model confidence', (patient.pod_risk_score ?? 0).toFixed(2)],
   ]
 
   return (
@@ -108,7 +105,7 @@ export default function PatientDetailView({ patient, trend }: {
         <div style={{ textAlign: 'right' }}>
           <Pill tone={tone}>{patient.pod_risk_label === 'medium' ? 'Moderate' : patient.pod_risk_label} risk</Pill>
           <div style={{ fontSize: 13.5, color: 'var(--text-faint)', marginTop: 6, fontWeight: 600 }}>
-            score {((patient.pod_risk_score ?? 0) * 10).toFixed(1)}/10
+            {(patient.pod_risk_score ?? 0).toFixed(2)} confidence
           </div>
         </div>
       </Card>

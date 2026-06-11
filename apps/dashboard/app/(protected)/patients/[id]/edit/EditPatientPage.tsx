@@ -11,7 +11,6 @@ import {
 type Patient = {
   id: string; name: string; age: number | null; sex: string | null
   surgery_type: string | null; pod_risk_label: string; pod_risk_score: number
-  comorbidity_count: number
 }
 
 type FormData = {
@@ -19,31 +18,16 @@ type FormData = {
   surgical: string; priorDelirium: string; dementia: string
 }
 type Step = 'form' | 'calculating' | 'result'
-type RiskResult = { level: 'Low' | 'Moderate' | 'High'; tone: 'good' | 'warn' | 'danger'; score: number }
+type RiskResult = { level: 'Low' | 'High'; tone: 'good' | 'danger'; confidence?: number }
 
-const GENDER = ['Female', 'Male', 'Non-binary', 'Prefer not to say']
-const ADMISSION = ['Elective surgery', 'Emergency admission', 'Inter-hospital transfer', 'Observation']
-const SURGICAL = ['Cardiac', 'Orthopedic', 'Abdominal / GI', 'Neurosurgical', 'Vascular', 'Thoracic', 'Other']
+const GENDER = ['Female', 'Male', 'Non-binary / Prefer not to say']
+const ADMISSION = ['Elective', 'Emergency', 'Urgent', 'Direct emergency', 'Same-day surgery']
+const SURGICAL = ['Neurosurgery', 'Other / Not listed']
 const YNU = ['Yes', 'No', 'Unknown']
 
 const COPY: Record<string, string> = {
   Low: 'Standard monitoring. Re-screen if condition changes.',
-  Moderate: 'Initiate preventive bundle: reorientation, sleep hygiene, early mobilisation. Re-screen daily.',
   High: 'Flag to care team. Begin intensive prevention and schedule daily cognitive sessions.',
-}
-
-function computeRisk(f: FormData): RiskResult {
-  let s = 0
-  if (f.age >= 80) s += 2; else if (f.age >= 70) s += 1
-  if (f.admission === 'Emergency admission') s += 2
-  else if (f.admission === 'Inter-hospital transfer') s += 1
-  if (f.priorDelirium === 'Yes') s += 3; else if (f.priorDelirium === 'Unknown') s += 1
-  if (f.dementia === 'Yes') s += 3; else if (f.dementia === 'Unknown') s += 1
-  if (['Cardiac', 'Neurosurgical', 'Vascular'].includes(f.surgical)) s += 2
-  else if (f.surgical && f.surgical !== 'Other') s += 1
-  if (s >= 7) return { level: 'High', tone: 'danger', score: s }
-  if (s >= 4) return { level: 'Moderate', tone: 'warn', score: s }
-  return { level: 'Low', tone: 'good', score: s }
 }
 
 export default function EditPatientPage({ patient }: { patient: Patient }) {
@@ -83,11 +67,10 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
   const submit = () => {
     if (!validate()) return
     setStep('calculating')
-    setTimeout(() => { setResult(computeRisk(f)); setStep('result') }, 950)
+    setTimeout(() => { setResult({ level: 'Low', tone: 'good' }); setStep('result') }, 950)
   }
 
   const save = async () => {
-    if (!result) return
     setSaving(true)
     setSaveError(null)
     try {
@@ -116,7 +99,12 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
         return
       }
 
-      router.push(`/patients/${patient.id}`)
+      const updated = await res.json()
+      const modelLevel = updated.pod_risk_label === 'high' ? 'High' : 'Low'
+      const modelTone: 'good' | 'danger' = updated.pod_risk_label === 'high' ? 'danger' : 'good'
+      setResult({ level: modelLevel, tone: modelTone, confidence: Math.round(updated.pod_risk_score * 100) })
+      setSaving(false)
+      setTimeout(() => router.push(`/patients/${patient.id}`), 2000)
     } catch {
       setSaveError('Could not reach the API server. Make sure it is running on localhost:8000.')
       setSaving(false)
@@ -148,14 +136,16 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
               <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" strokeWidth="12" />
               <circle cx="60" cy="60" r="52" fill="none" stroke={tv} strokeWidth="12" strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 52}
-                strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(result.score / 12, 1))}
+                strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min((result.confidence ?? 50) / 100, 1))}
                 transform="rotate(-90 60 60)" />
             </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
               <div>
                 <div style={{ fontSize: 40, fontWeight: 800, color: tv, lineHeight: 1,
                   fontFamily: 'var(--font-display)' }}>{result.level}</div>
-                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>score {result.score}/12</div>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {result.confidence !== undefined ? `${result.confidence}% confidence` : 'Calculating…'}
+                </div>
               </div>
             </div>
           </div>
