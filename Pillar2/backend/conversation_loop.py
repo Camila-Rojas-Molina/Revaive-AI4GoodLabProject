@@ -221,4 +221,15 @@ def run_conversation(patient_id: str):
     )
 
 if __name__ == "__main__":
-    run_conversation("5c955dcd-d937-4858-b335-5ad1862475b0")
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass  # python-dotenv not installed; fall back to already-exported env vars
+
+    patient_id = os.getenv("PATIENT_ID")
+    if not patient_id:
+        print("Error: PATIENT_ID is not set. Add PATIENT_ID=<uuid> to your .env file and retry.")
+        sys.exit(1)
+
+    run_conversation(patient_id)
