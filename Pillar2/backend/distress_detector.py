@@ -9,7 +9,7 @@ DISTRESS_KEYWORDS = [
     "can't move", "cannot move", "can't feel", "numb",
     # fear / confusion
     "scared", "afraid", "fear", "frightened", "terrified", "panicking", "panic",
-    "confused", "don't know where", "don't know what", "where am i", "what's happening",
+    "where am i", "what's happening",
     "lost", "something is wrong", "something's wrong",
     # calls for help
     "help me", "please help", "i need help", "call the nurse", "get the nurse",
