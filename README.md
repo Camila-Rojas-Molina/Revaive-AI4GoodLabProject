@@ -4,7 +4,7 @@ Revaive — an AI prototype that detects postoperative delirium (POD) risk and p
 
 **Purpose:** Combine a clinical risk model with an interactive patient app so nurses can identify high-risk patients and monitor cognitive changes longitudinally.
 
-**What it does: Runs a risk-prediction model on admission data and hosts a patient voice session pipeline that produces a 0–100 cognitive score stored and visualized on the nurse dashboard.
+**What it does:** Runs a risk-prediction model on admission data and hosts a patient voice session pipeline that produces a 0–100 cognitive score stored and visualized on the nurse dashboard.
 
 **Key features:** POD risk scoring, Supabase-backed persistence, daily patient voice sessions (Whisper → GPT → scoring), dashboard visualizations, and CI for reproducible builds.
 
