@@ -8,3 +8,5 @@ pandas
 numpy
 httpx
 python-jose[cryptography]
+openai
+elevenlabs
