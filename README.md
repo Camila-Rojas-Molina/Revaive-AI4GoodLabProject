@@ -1,8 +1,20 @@
 # Revaive
 
-AI prototype for Postoperative Delirium (POD) detection and cognitive monitoring, built for AI4Good Lab 2025.
+Revaive — an AI prototype that detects postoperative delirium (POD) risk and provides a patient-facing cognitive companion to collect voice sessions and track cognitive scores over time.
 
-Team: Joyanne Ma, Amy Dao, Norah Njonjo, Camila Rojas
+**Purpose:** Combine a clinical risk model with an interactive patient app so nurses can identify high-risk patients and monitor cognitive changes longitudinally.
+
+**What it does: Runs a risk-prediction model on admission data and hosts a patient voice session pipeline that produces a 0–100 cognitive score stored and visualized on the nurse dashboard.
+
+**Key features:** POD risk scoring, Supabase-backed persistence, daily patient voice sessions (Whisper → GPT → scoring), dashboard visualizations, and CI for reproducible builds.
+
+**Tech stack:** FastAPI (backend), Next.js / React (frontend), Supabase (DB/auth), Whisper/OpenAI + ElevenLabs (voice + LLM), Python tooling for models.
+
+**Quick dev run:** create a Python venv, pip install -r requirements.txt, run the API with uvicorn api.main:app --reload, and start the merged frontend from dashboard with npm ci && npm run dev.
+
+**Demo note:** For the hackathon we deploy a single Next.js app (merged into dashboard) and expose one Vercel link for the demo
+
+**Team:**  Amy Dao, Camila Rojas, Joyanne Ma, Norah Njonjo.
 
 ## Architecture
 
