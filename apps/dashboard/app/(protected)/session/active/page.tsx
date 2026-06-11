@@ -1,67 +1,40 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 import { Icon } from '@/components/ui'
+import VoiceButton from '@/components/VoiceButton'
 
-const SESSION_STEPS = [
-  { q: "Can you tell me today's date?", tag: 'Orientation' },
-  { q: 'Please name three animals you might see at a farm.', tag: 'Word recall' },
-  { q: 'Count backward from 20 by twos.', tag: 'Attention' },
-  { q: 'Describe what you had for breakfast today.', tag: 'Memory' },
-]
+type Turn = { role: 'patient' | 'assistant'; text: string }
 
 export default function ActiveSessionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const patientId = searchParams.get('patientId') ?? ''
 
-  const [step, setStep] = useState(0)
   const [secs, setSecs] = useState(0)
-  const [listening, setListening] = useState(true)
-  const [done, setDone] = useState(false)
+  const [turns, setTurns] = useState<Turn[]>([])
 
   useEffect(() => {
-    if (!listening) return
     const t = setInterval(() => setSecs(s => s + 1), 1000)
     return () => clearInterval(t)
-  }, [listening])
-
-  const checkForCompletion = useCallback(async () => {
-    if (!patientId) return
-    try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/sessions/${patientId}/latest`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } }
-      )
-      if (!res.ok) return
-      const data = await res.json()
-      const today = new Date().toISOString().split('T')[0]
-      if (data.session_date === today && data.cognitive_score !== null) {
-        setDone(true)
-        router.push('/session')
-      }
-    } catch { /* ignore */ }
-  }, [patientId, router])
-
-  useEffect(() => {
-    const id = setInterval(checkForCompletion, 5000)
-    return () => clearInterval(id)
-  }, [checkForCompletion])
+  }, [])
 
   const mm = String(Math.floor(secs / 60)).padStart(2, '0')
   const ss = String(secs % 60).padStart(2, '0')
-  const cur = SESSION_STEPS[step]
-  const next = () => step < SESSION_STEPS.length - 1 ? setStep(step + 1) : router.push('/session')
+
+  const handleTranscript = (text: string) =>
+    setTurns(prev => [...prev, { role: 'patient', text }])
+
+  const handleResponse = (text: string) =>
+    setTurns(prev => [...prev, { role: 'assistant', text }])
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column',
-      background: 'linear-gradient(170deg,var(--primary-2),var(--primary))', color: 'var(--on-primary)' }}>
+      background: 'linear-gradient(170deg,var(--primary-2),var(--primary))', color: 'var(--on-primary)',
+      minHeight: '100dvh' }}>
 
+      {/* Header */}
       <header style={{ padding: '22px var(--pad)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button onClick={() => router.push('/session')} aria-label="End session"
           style={{ width: 48, height: 48, borderRadius: 14, border: '1px solid rgba(255,255,255,.25)',
@@ -74,55 +47,46 @@ export default function ActiveSessionPage() {
         </span>
       </header>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '4px 0 8px' }}>
-        {SESSION_STEPS.map((_, i) => (
-          <span key={i} style={{ height: 6, width: i === step ? 34 : 22, borderRadius: 3,
-            background: i <= step ? 'var(--on-primary)' : 'rgba(255,255,255,.28)', transition: 'all .3s' }} />
-        ))}
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', padding: '20px 40px', textAlign: 'center' }}>
-        <span style={{ fontSize: 14, letterSpacing: '.16em', fontWeight: 700, opacity: .75, marginBottom: 22 }}>
-          {cur.tag.toUpperCase()} · {step + 1} OF {SESSION_STEPS.length}
-        </span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: 38, lineHeight: 1.18,
-          margin: '0 0 54px', maxWidth: 560 }}>{cur.q}</h2>
-
-        <div style={{ position: 'relative', display: 'grid', placeItems: 'center', marginBottom: 30 }}>
-          {listening && [0, 1, 2].map(i => (
-            <span key={i} style={{ position: 'absolute', width: 150, height: 150, borderRadius: '50%',
-              border: '2px solid rgba(255,255,255,.3)',
-              animation: `cbWave 2.4s ease-out ${i * 0.8}s infinite` }} />
-          ))}
-          <span style={{ width: 138, height: 138, borderRadius: '50%', background: 'rgba(255,255,255,.14)',
-            display: 'grid', placeItems: 'center' }}>
-            <span style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--on-primary)',
-              color: 'var(--primary)', display: 'grid', placeItems: 'center',
-              animation: listening ? 'cbBreath 2.4s ease-in-out infinite' : 'none' }}>
-              <Icon name={listening ? 'mic' : 'waveform'} size={46} />
+      {/* Conversation transcript */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 var(--pad)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {turns.length === 0 ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', textAlign: 'center', padding: '40px 0' }}>
+            <span style={{ width: 96, height: 96, borderRadius: '50%', background: 'rgba(255,255,255,.14)',
+              display: 'grid', placeItems: 'center', marginBottom: 24 }}>
+              <Icon name="mic" size={46} />
             </span>
-          </span>
-        </div>
-        <p style={{ fontSize: 18, opacity: .85, margin: 0, minHeight: 26 }}>
-          {listening ? 'Listening… take your time.' : 'Paused'}
-        </p>
+            <p style={{ fontSize: 22, fontWeight: 600, margin: '0 0 8px', opacity: .9 }}>
+              Ready when you are
+            </p>
+            <p style={{ fontSize: 16, opacity: .65, margin: 0 }}>
+              Tap the button below and start speaking
+            </p>
+          </div>
+        ) : (
+          turns.map((t, i) => (
+            <div key={i} style={{
+              alignSelf: t.role === 'patient' ? 'flex-end' : 'flex-start',
+              maxWidth: '80%',
+              background: t.role === 'patient' ? 'rgba(255,255,255,.18)' : 'rgba(255,255,255,.08)',
+              borderRadius: t.role === 'patient' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+              padding: '12px 16px',
+              fontSize: 16,
+              lineHeight: 1.5,
+            }}>
+              {t.text}
+            </div>
+          ))
+        )}
       </div>
 
-      <div style={{ padding: '0 var(--pad) 40px', display: 'flex', gap: 14 }}>
-        <button onClick={() => setListening(l => !l)} aria-label={listening ? 'Pause' : 'Resume'}
-          style={{ width: 'var(--tap)', height: 'var(--tap)', borderRadius: 16, flexShrink: 0,
-            border: '1px solid rgba(255,255,255,.3)', background: 'rgba(255,255,255,.1)', color: 'inherit',
-            display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
-          <Icon name={listening ? 'pause' : 'play'} size={26} />
-        </button>
-        <button onClick={next}
-          style={{ flex: 1, minHeight: 'var(--tap)', borderRadius: 16, border: 'none', cursor: 'pointer',
-            background: 'var(--on-primary)', color: 'var(--primary)', fontWeight: 800, fontSize: 19,
-            fontFamily: 'var(--font-ui)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          {step < SESSION_STEPS.length - 1 ? 'Next question' : 'Finish session'}
-          <Icon name="arrowRight" size={23} />
-        </button>
+      {/* Voice button */}
+      <div style={{ padding: '20px var(--pad) 40px' }}>
+        <VoiceButton
+          patientId={patientId}
+          onTranscript={handleTranscript}
+          onResponse={handleResponse}
+        />
       </div>
     </div>
   )

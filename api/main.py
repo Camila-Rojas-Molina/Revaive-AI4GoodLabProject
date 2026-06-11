@@ -3,7 +3,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routers import patients, sessions, risk, scores, reports
+from api.routers import patients, sessions, risk, scores, reports, voice
 
 app = FastAPI(title="Revaive API")
 
@@ -19,3 +19,4 @@ app.include_router(sessions.router, prefix="/sessions", tags=["sessions"])
 app.include_router(risk.router, prefix="/risk", tags=["risk"])
 app.include_router(scores.router, prefix="/scores", tags=["scores"])
 app.include_router(reports.router, prefix="/reports", tags=["reports"])
+app.include_router(voice.router, tags=["voice"])

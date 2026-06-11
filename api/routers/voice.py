@@ -3,8 +3,9 @@ import sys
 import tempfile
 import base64
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from supabase import create_client
 
 # Add the Pillar2 backend folder to imports so we can reuse the existing voice services.
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../Pillar2/backend"))
@@ -12,7 +13,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../../Pillar2/backend")
 try:
     from whisper_service import transcribe_audio
     from gpt_service import get_response
-    from patient_service import load_patient
     from elevenlabs_service import text_to_speech
 except ImportError as exc:
     raise ImportError(
@@ -22,37 +22,37 @@ except ImportError as exc:
 router = APIRouter()
 
 
+def _db():
+    return create_client(os.environ["NEXT_PUBLIC_SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
+
+
 @router.post("/voice")
 async def voice_session(
     patient_id: str = Form(...),
     audio_file: UploadFile = File(...),
 ):
-    """Receive a voice recording from the frontend, transcribe it, generate a response, and return both text and audio."""
-
-    patient_profile = load_patient(patient_id)
-    if patient_profile is None:
+    # Load patient profile from Supabase instead of a local JSON file
+    db = _db()
+    result = db.table("patients").select("name, age, sex, surgery_type").eq("id", patient_id).limit(1).execute()
+    if not result.data:
         raise HTTPException(status_code=404, detail="Patient not found")
+    patient_profile = result.data[0]
 
-    tmp_file = tempfile.NamedTemporaryFile(suffix=os.path.splitext(audio_file.filename)[1] or ".webm", delete=False)
+    tmp_file = tempfile.NamedTemporaryFile(
+        suffix=os.path.splitext(audio_file.filename or "")[1] or ".webm",
+        delete=False,
+    )
     try:
         tmp_file.write(await audio_file.read())
         tmp_file.flush()
 
-        # Transcribe the patient's voice
         transcript = transcribe_audio(tmp_file.name)
-        
-        # Generate the chatbot response
         response_text = get_response(transcript, [], patient_profile)
-        
-        # Convert response to audio (MP3)
         audio_file_path = text_to_speech(response_text)
-        
-        # Read the generated audio file and encode as base64
+
         with open(audio_file_path, "rb") as f:
-            audio_bytes = f.read()
-            audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
-        
-        # Clean up the generated audio file
+            audio_base64 = base64.b64encode(f.read()).decode("utf-8")
+
         try:
             os.unlink(audio_file_path)
         except Exception:
