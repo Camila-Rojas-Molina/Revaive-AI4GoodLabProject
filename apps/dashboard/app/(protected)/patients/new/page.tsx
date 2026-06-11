@@ -13,20 +13,21 @@ type RiskResult = { level: 'Low' | 'Moderate' | 'High'; tone: 'good' | 'warn' | 
 type FormData = { name: string; age: number; gender: string; admission: string; surgical: string; priorDelirium: string; dementia: string; email: string }
 type Step = 'form' | 'calculating' | 'result'
 
-const GENDER = ['Female', 'Male', 'Non-binary', 'Prefer not to say']
-const ADMISSION = ['Elective surgery', 'Emergency admission', 'Inter-hospital transfer', 'Observation']
-const SURGICAL = ['Cardiac', 'Orthopedic', 'Abdominal / GI', 'Neurosurgical', 'Vascular', 'Thoracic', 'Other']
+const GENDER = ['Female', 'Male', 'Non-binary / Prefer not to say']
+// These map 1-to-1 with the MIMIC-IV admission_type values the model was trained on
+const ADMISSION = ['Elective', 'Emergency', 'Urgent', 'Direct emergency', 'Same-day surgery']
+// The model only distinguishes Neurosurgery vs Other — all other categories are equivalent
+const SURGICAL = ['Neurosurgery', 'Other / Not listed']
 const YNU = ['Yes', 'No', 'Unknown']
 
 function computeRisk(f: FormData): RiskResult {
   let s = 0
   if (f.age >= 80) s += 2; else if (f.age >= 70) s += 1
-  if (f.admission === 'Emergency admission') s += 2
-  else if (f.admission === 'Inter-hospital transfer') s += 1
+  if (f.admission === 'Emergency') s += 2
+  else if (f.admission === 'Urgent' || f.admission === 'Direct emergency') s += 1
   if (f.priorDelirium === 'Yes') s += 3; else if (f.priorDelirium === 'Unknown') s += 1
   if (f.dementia === 'Yes') s += 3; else if (f.dementia === 'Unknown') s += 1
-  if (['Cardiac', 'Neurosurgical', 'Vascular'].includes(f.surgical)) s += 2
-  else if (f.surgical && f.surgical !== 'Other') s += 1
+  if (f.surgical === 'Neurosurgery') s += 2
   if (s >= 7) return { level: 'High', tone: 'danger', score: s }
   if (s >= 4) return { level: 'Moderate', tone: 'warn', score: s }
   return { level: 'Low', tone: 'good', score: s }
