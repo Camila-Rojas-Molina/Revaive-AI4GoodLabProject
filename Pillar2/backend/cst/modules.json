@@ -47,7 +47,7 @@
         "What advice would you give your younger self?"
       ]
     },
-    "word_fluency": {
+    "language_and_word_fluency": {
       "description": "Verbal fluency and language exercises",
       "cst_basis": "Core CST component - targets language domain, significantly affected in POCD per Auto-MoCA study",
       "low": [
@@ -72,8 +72,8 @@
         "Describe what your perfect holiday would look like in as much detail as possible."
       ]
     },
-    "attention": {
-      "description": "Attention and memory exercises",
+    "attention_and_numbers": {
+      "description": "Attention, concentration, and numerical reasoning exercises",
       "cst_basis": "Spector CST manual - attention training, targets domain significantly declining in POCD",
       "low": [
         "Can you count backwards from 10 for me?",
@@ -97,22 +97,22 @@
         "If you won a million dollars tomorrow, what would be your plan for spending it?"
       ]
     },
-    "current_affairs": {
-      "description": "Discussion of opinions and current events",
+    "abstraction_and_reasoning": {
+      "description": "Abstract thinking, reasoning by analogy, proverbs, and categorisation",
       "cst_basis": "Spector CST manual - exercises abstract thinking and executive function",
       "low": [
-        "What's your favourite season and why?",
-        "Do you prefer city life or country life?",
-        "What's your favourite type of food?",
-        "Do you prefer mornings or evenings?",
-        "What kind of music do you enjoy most?"
+        "What do a cat and a dog have in common?",
+        "How are an apple and an orange similar?",
+        "Can you think of something that is both round and something you eat?",
+        "What do a chair and a table have in common?",
+        "How is a bus like a bicycle?"
       ],
       "medium": [
-        "What do you think makes a good friend?",
-        "If you could change one thing about the world what would it be?",
-        "What do you think is more important — experience or education?",
-        "What's something you think young people today could learn from your generation?",
-        "What do you think makes a happy life?"
+        "What do a river and a road have in common?",
+        "Can you explain what the saying 'don't judge a book by its cover' means to you?",
+        "If you had to sort these into two groups — hammer, paintbrush, screwdriver, pencil — how would you do it?",
+        "How is a library like the internet?",
+        "What do music and painting have in common?"
       ],
       "high": [
         "What do you think about how technology has changed everyday life?",
@@ -122,29 +122,29 @@
         "What do you think the world will look like in 20 years?"
       ]
     },
-    "memory_recall": {
-      "description": "Testing recall of things mentioned earlier in session",
-      "cst_basis": "Spaced retrieval training - validated technique for strengthening short-term memory consolidation",
+    "sensory_and_creativity": {
+      "description": "Music, art, and open creative scenarios to stimulate imagination and sensory memory",
+      "cst_basis": "Creative arts therapies and sensory stimulation - used as engagement fallback and for low-scoring sessions",
       "low": [
-        "Earlier you mentioned your name — can you tell me again?",
-        "What was the first thing we talked about today?",
-        "Can you remember one thing you told me about yourself earlier?",
-        "What did you say your favourite food was earlier in our conversation?",
-        "Can you remember what we were just talking about?"
+        "If you could hear one song right now, what would it be?",
+        "Can you describe what your favourite colour looks like to someone who has never seen it?",
+        "What does your favourite food taste like?",
+        "Can you describe a smell that takes you back to a happy memory?",
+        "If you could paint a picture of your hometown, what would be in it?"
       ],
       "medium": [
-        "Earlier you mentioned someone important to you — can you tell me about them again?",
-        "What were the three things you told me you enjoy doing?",
-        "Can you summarize what we've talked about so far today?",
-        "Earlier you described somewhere you've lived — can you tell me about it again?",
-        "What was the story you told me earlier about?"
+        "Describe a piece of music you love — what does it make you feel or see in your mind?",
+        "If you could design your dream garden, what would be in it?",
+        "Describe your favourite painting or a work of art that has stayed with you.",
+        "If your life had a theme song, what would it be and why?",
+        "Imagine you are designing a room just for relaxing — what does it look, feel, and sound like?"
       ],
       "high": [
-        "Can you recall everything you've shared with me today and tell me which memory felt most meaningful to you?",
-        "Earlier you mentioned something that happened in your past — can you expand on that?",
-        "What's the most important thing you've told me today?",
-        "Can you connect two things you mentioned earlier in our conversation?",
-        "If you had to tell someone else about our conversation today what would you say?"
+        "If you could compose a piece of music to capture one moment in your life, what would it sound like and what moment would it capture?",
+        "Design your dream home — describe every room and what makes each space special to you.",
+        "If you could create a work of art to represent your life story, what form would it take and what would it show?",
+        "Imagine you are writing the soundtrack to a film about your life — what genres, instruments, and mood would you choose?",
+        "Describe a scene from nature that you find beautiful and explain what it means to you."
       ]
     }
   }

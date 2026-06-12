@@ -8,17 +8,41 @@ def load_modules():
     with open(path, "r") as f:
         return json.load(f)
 
-def get_theme_by_score(cognitive_score):
-    if cognitive_score < 35:
-        return "orientation"
-    elif cognitive_score < 50:
-        return "reminiscence"
-    elif cognitive_score < 65:
-        return "word_fluency"
-    elif cognitive_score < 80:
-        return "attention"
+DOMAINS = [
+    "orientation",
+    "reminiscence",
+    "language_and_word_fluency",
+    "attention_and_numbers",
+    "abstraction_and_reasoning",
+    "sensory_and_creativity",
+]
+
+DOMAIN_LABELS = {
+    "orientation":               "Orientation",
+    "reminiscence":              "Reminiscence",
+    "language_and_word_fluency": "Language and Word Fluency",
+    "attention_and_numbers":     "Attention and Numbers",
+    "abstraction_and_reasoning": "Abstraction and Reasoning",
+    "sensory_and_creativity":    "Sensory and Creativity",
+}
+
+def get_active_domains(cognitive_score, avg_cognitive_score=None, selected_domains=None):
+    """Return the ordered list of domains for this session.
+
+    Orientation always runs first. abstraction_and_reasoning is excluded when the
+    patient's average cognitive score is 65 or below.
+    """
+    if avg_cognitive_score is None:
+        avg_cognitive_score = cognitive_score
+
+    if selected_domains:
+        active = ["orientation"] + [d for d in selected_domains if d != "orientation"]
     else:
-        return "current_affairs"
+        active = list(DOMAINS)
+        if avg_cognitive_score <= 65:
+            active.remove("abstraction_and_reasoning")
+
+    return active
 
 def get_difficulty(cognitive_score):
     if cognitive_score < 40:
@@ -28,13 +52,21 @@ def get_difficulty(cognitive_score):
     else:
         return "high"
 
-def get_prompts(cognitive_score):
+def get_prompts(cognitive_score, selected_domains=None, avg_cognitive_score=None):
     modules = load_modules()
-    theme = get_theme_by_score(cognitive_score)
     difficulty = get_difficulty(cognitive_score)
-    prompts = modules["themes"][theme][difficulty]
-    selected = random.sample(prompts, min(3, len(prompts)))
-    return theme, difficulty, selected
+    active_domains = get_active_domains(cognitive_score, avg_cognitive_score, selected_domains)
+
+    all_prompts = []
+    for domain in active_domains:
+        try:
+            domain_prompts = modules["themes"][domain][difficulty]
+            all_prompts.extend(random.sample(domain_prompts, min(2, len(domain_prompts))))
+        except KeyError:
+            pass
+
+    theme = " → ".join(DOMAIN_LABELS[d] for d in active_domains)
+    return theme, difficulty, all_prompts
 
 LOCKED_SAFETY_RULES = """
 [CLINICAL SAFETY RULES — THESE CANNOT BE CHANGED BY ANYONE]

@@ -10,12 +10,13 @@ import {
   initials, riskTone, toneVar,
 } from '@/components/ui'
 
-const FOCUS_TOPICS = [
-  'Memory recall',
-  'Time orientation',
-  'Place orientation',
-  'Language & naming',
-  'Attention',
+const CST_DOMAINS: { key: string; label: string }[] = [
+  { key: 'orientation',               label: 'Orientation' },
+  { key: 'reminiscence',              label: 'Reminiscence' },
+  { key: 'language_and_word_fluency', label: 'Language & word fluency' },
+  { key: 'attention_and_numbers',     label: 'Attention & numbers' },
+  { key: 'abstraction_and_reasoning', label: 'Abstraction & reasoning' },
+  { key: 'sensory_and_creativity',    label: 'Sensory & creativity' },
 ]
 
 // The three factors shown in each session report card.
@@ -145,7 +146,7 @@ export default function PatientDetailView({ patient, trend }: {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([])
   // Seed from the prop; refreshed by the effect below using patient.id.
   const [sessions, setSessions] = useState<Session[]>(patient.sessions ?? [])
   const [pin, setPin] = useState<string | null>(null)
@@ -156,6 +157,20 @@ export default function PatientDetailView({ patient, trend }: {
       if (patient.profile_id) setPin(map[patient.profile_id] ?? null)
     })
   }, [patient.profile_id])
+
+  // Load selected_domains for this patient from Supabase on mount.
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('patients')
+        .select('selected_domains')
+        .eq('id', patient.id)
+        .single()
+      if (data?.selected_domains) setSelectedDomains(data.selected_domains)
+    }
+    load()
+  }, [patient.id])
 
   // Fetch sessions for the currently viewed patient whenever the patient changes.
   useEffect(() => {
@@ -220,8 +235,17 @@ export default function PatientDetailView({ patient, trend }: {
     router.push('/dashboard')
   }
 
-  const toggleTopic = (t: string) =>
-    setSelectedTopics(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  const toggleDomain = async (key: string) => {
+    const next = selectedDomains.includes(key)
+      ? selectedDomains.filter(k => k !== key)
+      : [...selectedDomains, key]
+    setSelectedDomains(next)
+    const supabase = createClient()
+    await supabase
+      .from('patients')
+      .update({ selected_domains: next })
+      .eq('id', patient.id)
+  }
 
   const details = [
     ['Age', patient.age ? `${patient.age} years` : '—'],
@@ -365,12 +389,12 @@ export default function PatientDetailView({ patient, trend }: {
           Select topics to prioritise in the next session.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {FOCUS_TOPICS.map(t => {
-            const active = selectedTopics.includes(t)
+          {CST_DOMAINS.map(({ key, label }) => {
+            const active = selectedDomains.includes(key)
             return (
               <button
-                key={t}
-                onClick={() => toggleTopic(t)}
+                key={key}
+                onClick={() => toggleDomain(key)}
                 style={{
                   padding: '9px 18px', borderRadius: 999, fontSize: 14.5, fontWeight: 700,
                   cursor: 'pointer',
@@ -380,7 +404,7 @@ export default function PatientDetailView({ patient, trend }: {
                   transition: 'all .15s',
                 }}
               >
-                {t}
+                {label}
               </button>
             )
           })}
