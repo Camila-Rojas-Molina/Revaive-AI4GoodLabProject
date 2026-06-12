@@ -4,29 +4,28 @@ import PatientHomeClient from './PatientHomeClient'
 
 export default async function SessionPage() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session) redirect('/login')
+  if (!user) redirect('/login')
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL
-  const headers = { Authorization: `Bearer ${session.access_token}` }
+  // Query Supabase directly — no backend round-trip needed
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('id, name')
+    .eq('profile_id', user.id)
+    .single()
 
-  let patient: { id: string; name: string } | null = null
   let todayDone = false
-
-  try {
-    const patientRes = await fetch(`${apiUrl}/patients/me`, { headers, cache: 'no-store' })
-    if (patientRes.ok) {
-      patient = await patientRes.json()
-      const latestRes = await fetch(`${apiUrl}/sessions/${patient!.id}/latest`, { headers, cache: 'no-store' })
-      if (latestRes.ok) {
-        const latest = await latestRes.json()
-        const today = new Date().toISOString().split('T')[0]
-        // if (latest.session_date === today && latest.cognitive_score !== null) todayDone = true
-      }
-    }
-  } catch {
-    // API offline
+  if (patient) {
+    const today = new Date().toISOString().split('T')[0]
+    const { data: latest } = await supabase
+      .from('sessions')
+      .select('session_date, cognitive_score')
+      .eq('patient_id', patient.id)
+      .order('session_date', { ascending: false })
+      .limit(1)
+      .single()
+    if (latest?.session_date === today && latest.cognitive_score !== null) todayDone = true
   }
 
   const hour = new Date().getHours()
