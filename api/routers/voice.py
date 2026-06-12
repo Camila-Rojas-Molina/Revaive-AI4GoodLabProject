@@ -12,12 +12,21 @@ from datetime import datetime, timedelta
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../Pillar2/backend"))
 
+# Ensure NLTK data is available before cognitive_scorer runs word_tokenize
+try:
+    import nltk
+    for _pkg in ("punkt", "punkt_tab", "averaged_perceptron_tagger", "stopwords"):
+        nltk.download(_pkg, quiet=True)
+except Exception:
+    pass
+
 try:
     from whisper_service import transcribe_audio
     from gpt_service import get_response
     from elevenlabs_service import text_to_speech
     from cognitive_scorer import Turn, score_session, session_to_dict
     from distress_detector import check_distress
+    from cst.cst_manager import get_difficulty, get_prompts
 except ImportError as exc:
     raise ImportError(
         "Could not import voice backend services. Make sure Pillar2/backend is present and dependencies are installed."
@@ -193,6 +202,9 @@ async def end_voice_session(
     except Exception as e:
         print(f"[voice/end] scoring failed: {e}")
 
+    score_for_cst = cognitive_score if cognitive_score is not None else 50.0
+    theme, difficulty, _ = get_prompts(score_for_cst)
+
     session_result = db.table("sessions").insert({
         "patient_id":       patient_id,
         "transcript":       full_transcript,
@@ -200,6 +212,8 @@ async def end_voice_session(
         "cognitive_score":  cognitive_score,
         "flag_escalate":    flag_escalate or flag_for_review,
         "component_scores": component_scores,
+        "theme":            theme,
+        "difficulty":       difficulty,
     }).execute()
 
     session_row = session_result.data[0]

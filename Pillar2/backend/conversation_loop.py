@@ -20,7 +20,7 @@ from cst.cst_manager import get_theme_by_score, get_difficulty
 
 SAMPLE_RATE = 16000
 SILENCE_THRESHOLD = 0.015  # raised slightly so brief breath pauses don't trigger early cutoff
-SILENCE_DURATION = 3       # wait 3 seconds of quiet before treating it as end of turn
+SILENCE_DURATION = 1.5       # wait 1.5 seconds of quiet before treating it as end of turn
 
 
 def record_until_silence():

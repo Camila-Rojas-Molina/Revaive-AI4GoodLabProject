@@ -22,7 +22,7 @@ export default async function SessionPage() {
       if (latestRes.ok) {
         const latest = await latestRes.json()
         const today = new Date().toISOString().split('T')[0]
-        if (latest.session_date === today && latest.cognitive_score !== null) todayDone = true
+        // if (latest.session_date === today && latest.cognitive_score !== null) todayDone = true
       }
     }
   } catch {
