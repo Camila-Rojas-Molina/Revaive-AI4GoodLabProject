@@ -121,7 +121,7 @@ export default function VoiceButton({
     }
   }
 
-  const isDisabled = disabled || loading || recording
+  const isDisabled = disabled || loading
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

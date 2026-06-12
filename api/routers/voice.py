@@ -46,9 +46,16 @@ async def voice_session(
         tmp_file.write(await audio_file.read())
         tmp_file.flush()
 
-        transcript = transcribe_audio(tmp_file.name)
-        response_text = get_response(transcript, [], patient_profile)
-        audio_file_path = text_to_speech(response_text)
+        result = transcribe_audio(tmp_file.name)
+        if result is None:
+            raise HTTPException(status_code=422, detail="Could not transcribe audio — please speak clearly and try again.")
+
+        patient_text = result["text"]
+        response_text = get_response(patient_text, [], patient_profile)
+
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tts_tmp:
+            tts_path = tts_tmp.name
+        audio_file_path = text_to_speech(response_text, output_path=tts_path)
 
         with open(audio_file_path, "rb") as f:
             audio_base64 = base64.b64encode(f.read()).decode("utf-8")
@@ -59,7 +66,7 @@ async def voice_session(
             pass
 
         return JSONResponse({
-            "transcript": transcript,
+            "transcript": patient_text,
             "assistant": response_text,
             "audio": audio_base64,
             "audioFormat": "mp3",
