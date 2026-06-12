@@ -32,6 +32,7 @@ export default function ActiveSessionPage() {
   const streamRef = useRef<MediaStream | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasSpeechRef = useRef(false)
@@ -75,9 +76,11 @@ export default function ActiveSessionPage() {
         const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
         const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }))
         const audio = new Audio(url)
-        audio.onended = () => { URL.revokeObjectURL(url); resolve() }
-        audio.onerror = () => { URL.revokeObjectURL(url); resolve() }
-        audio.play().catch(() => resolve())
+        currentAudioRef.current = audio
+        const done = () => { URL.revokeObjectURL(url); currentAudioRef.current = null; resolve() }
+        audio.onended = done
+        audio.onerror = done
+        audio.play().catch(() => done())
       } catch { resolve() }
     })
   }
@@ -168,6 +171,7 @@ export default function ActiveSessionPage() {
           setIsSpeaking(true)
           if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null }
         } else if (hasSpeechRef.current && !silenceTimerRef.current) {
+          setIsSpeaking(false)
           silenceTimerRef.current = setTimeout(() => {
             silenceTimerRef.current = null
             if (recorderRef.current?.state !== 'inactive') recorderRef.current?.stop()
@@ -211,6 +215,10 @@ export default function ActiveSessionPage() {
     if (phase === 'ending') return
     setPhase('ending')
     isActiveRef.current = false
+    setIsSpeaking(false)
+    setIsBotTalking(false)
+    currentAudioRef.current?.pause()
+    currentAudioRef.current = null
     stopAudio()
 
     // Save session to backend
@@ -261,17 +269,17 @@ export default function ActiveSessionPage() {
             padding: 0, opacity: starting ? .65 : 1, transition: 'opacity .2s' }}
         >
           <div style={{
-            width: 160, height: 160, borderRadius: '50%',
+            width: 320, height: 320, borderRadius: '50%',
             background: 'rgba(255,255,255,.18)',
             display: 'grid', placeItems: 'center',
           }}>
             <div style={{
-              width: 110, height: 110, borderRadius: '50%',
+              width: 220, height: 220, borderRadius: '50%',
               background: 'rgba(255,255,255,.92)',
               display: 'grid', placeItems: 'center',
             }}>
               <div style={{ color: 'var(--primary)' }}>
-                <Icon name="mic" size={46} />
+                <Icon name="mic" size={80} />
               </div>
             </div>
           </div>
@@ -360,7 +368,7 @@ export default function ActiveSessionPage() {
           flex: 1, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: 26,
         }}>
-          <div style={{ position: 'relative', width: 180, height: 180 }}>
+          <div style={{ position: 'relative', width: 320, height: 320 }}>
             {isSpeaking && (
               <>
                 <div className="vad-ring" />
@@ -370,7 +378,7 @@ export default function ActiveSessionPage() {
             )}
             <div style={{
               position: 'relative', zIndex: 1,
-              width: 180, height: 180, borderRadius: '50%',
+              width: 320, height: 320, borderRadius: '50%',
               background: isSpeaking
                 ? 'rgba(255,255,255,.28)'
                 : 'rgba(255,255,255,.14)',
@@ -378,7 +386,7 @@ export default function ActiveSessionPage() {
               transition: 'background .25s',
             }}>
               <div style={{
-                width: 120, height: 120, borderRadius: '50%',
+                width: 220, height: 220, borderRadius: '50%',
                 background: isProcessing
                   ? 'rgba(255,255,255,.4)'
                   : 'rgba(255,255,255,.92)',
@@ -386,7 +394,7 @@ export default function ActiveSessionPage() {
                 transition: 'background .25s',
               }}>
                 <div style={{ color: 'var(--primary)' }}>
-                  <Icon name="mic" size={46} />
+                  <Icon name="mic" size={80} />
                 </div>
               </div>
             </div>
