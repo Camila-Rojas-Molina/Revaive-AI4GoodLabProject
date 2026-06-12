@@ -50,6 +50,7 @@ export const Icon = ({ name, size = 24, stroke = 2, style }: {
     dotsV: <><circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/></>,
     mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></>,
     filter: <><path d="M4 6h16M7 12h10M10 18h4"/></>,
+    stop: <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>,
   }
   return <svg {...p}>{paths[name] ?? null}</svg>
 }
