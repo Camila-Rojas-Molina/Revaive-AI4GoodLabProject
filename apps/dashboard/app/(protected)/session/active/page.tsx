@@ -193,7 +193,7 @@ export default function ActiveSessionPage() {
     try {
       const form = new FormData()
       form.append('patient_id', patientId)
-      const res = await fetch(`${API}/voice/start`, { method: 'POST', body: form })
+      const res = await fetch(`${API}/voice`, { method: 'POST', body: form })
       if (!res.ok) throw new Error('Could not start session')
       const data = await res.json()
 
