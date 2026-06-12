@@ -16,7 +16,24 @@ from cognitive_scorer import Turn, score_session, session_to_dict
 from distress_detector import check_distress
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'cst'))
-from cst.cst_manager import get_theme_by_score, get_difficulty
+from cst.cst_manager import get_prompts, get_difficulty
+
+def fetch_selected_domains(patient_id: str) -> list:
+    """Return the nurse-configured domain list from Supabase, or [] to run all domains."""
+    try:
+        from supabase import create_client
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+        if not url or not key:
+            return []
+        client = create_client(url, key)
+        result = client.table("patients").select("selected_domains").eq("id", patient_id).single().execute()
+        domains = result.data.get("selected_domains") if result.data else None
+        return domains if domains else []
+    except Exception as e:
+        print(f"Warning: could not fetch selected_domains from Supabase: {e}")
+        return []
+
 
 SAMPLE_RATE = 16000
 SILENCE_THRESHOLD = 0.015  # raised slightly so brief breath pauses don't trigger early cutoff
@@ -97,6 +114,14 @@ def post_session_to_api(
 def run_conversation(patient_id: str):
     patient_profile = load_patient(patient_id)
     print(f"Loaded profile: {patient_profile}")
+
+    # Fetch nurse-selected domains before building the system prompt.
+    # An empty list means the nurse made no selection — fall back to all domains.
+    selected_domains = fetch_selected_domains(patient_id)
+    cognitive_score = patient_profile.get("last_cri") or 50
+    theme, difficulty, _ = get_prompts(cognitive_score, selected_domains=selected_domains)
+    patient_profile["selected_domains"] = selected_domains
+
     print("CogBridge is ready. Start speaking...")
 
     conversation_history = []
@@ -206,8 +231,6 @@ def run_conversation(patient_id: str):
         baseline_cri=baseline_cri,
     )
 
-    theme = get_theme_by_score(50)
-    difficulty = get_difficulty(50)
     full_transcript = "\n".join(plain_turns)
 
     post_session_to_api(
