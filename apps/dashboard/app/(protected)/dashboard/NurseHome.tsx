@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { getPatientPins } from './actions'
 import {
   Screen, TopBar, IconButton, BottomNav, Button, Card,
   Pill, SearchBar, EmptyState, Icon, FilterChips, KebabMenu, ConfirmDialog,
@@ -18,6 +19,7 @@ const NURSE_NAV = [
 type Patient = {
   id: string; name: string; age: number | null; surgery_type: string | null
   pod_risk_label: 'high' | 'medium' | 'low'; pod_risk_score: number
+  profile_id?: string | null
   sessions: { cognitive_score: number | null; session_date: string; flag_escalate: boolean; created_at: string }[]
 }
 
@@ -29,7 +31,14 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
   const [patients, setPatients] = useState(initial)
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [pinMap, setPinMap] = useState<Record<string, string>>({})
   const router = useRouter()
+
+  useEffect(() => {
+    const profileIds = initial.flatMap(p => p.profile_id ? [p.profile_id] : [])
+    if (profileIds.length === 0) return
+    getPatientPins(profileIds).then(setPinMap)
+  }, [initial])
 
   const query = q.trim().toLowerCase()
 
@@ -152,6 +161,20 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                   <div style={{ fontSize: 14.5, color: 'var(--text-muted)' }}>
                     {p.age ? `${p.age} yrs · ` : ''}{p.surgery_type ?? 'No procedure'}
                     {latestScore != null ? ` · score ${latestScore}` : ''}
+                  </div>
+                  <div style={{ display: 'flex', gap: 14, marginTop: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'monospace',
+                      background: 'var(--surface-2)', borderRadius: 4, padding: '2px 6px',
+                      letterSpacing: '.03em', userSelect: 'all' }}>
+                      ID: {p.id.slice(0, 8)}
+                    </span>
+                    {p.profile_id && pinMap[p.profile_id] && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)',
+                        fontFamily: 'monospace', background: 'var(--surface-2)', borderRadius: 4,
+                        padding: '2px 6px', letterSpacing: '.08em' }}>
+                        PIN: {pinMap[p.profile_id]}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Pill tone={tone}>

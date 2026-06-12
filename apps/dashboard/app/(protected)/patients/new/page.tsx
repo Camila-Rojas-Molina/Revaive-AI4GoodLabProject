@@ -10,13 +10,11 @@ import {
 import { createPatientAccount } from './actions'
 
 type RiskResult = { level: 'Low' | 'High'; tone: 'good' | 'danger'; confidence: number }
-type FormData = { name: string; age: number; gender: string; admission: string; surgical: string; priorDelirium: string; dementia: string; email: string }
-type Step = 'form' | 'calculating' | 'result'
+type FormData = { name: string; age: number; gender: string; admission: string; surgical: string; priorDelirium: string; dementia: string }
+type Step = 'form' | 'calculating' | 'result' | 'credentials'
 
 const GENDER = ['Female', 'Male', 'Non-binary / Prefer not to say']
-// These map 1-to-1 with the MIMIC-IV admission_type values the model was trained on
 const ADMISSION = ['Elective', 'Emergency', 'Urgent', 'Direct emergency', 'Same-day surgery']
-// The model only distinguishes Neurosurgery vs Other — all other categories are equivalent
 const SURGICAL = ['Neurosurgery', 'Other / Not listed']
 const YNU = ['Yes', 'No', 'Unknown']
 
@@ -28,10 +26,11 @@ const COPY: Record<string, string> = {
 export default function NewPatientPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>('form')
-  const [f, setF] = useState<FormData>({ name: '', age: 70, gender: '', admission: '', surgical: '', priorDelirium: '', dementia: '', email: '' })
+  const [f, setF] = useState<FormData>({ name: '', age: 70, gender: '', admission: '', surgical: '', priorDelirium: '', dementia: '' })
   const [errs, setErrs] = useState<Partial<Record<keyof FormData, string>>>({})
   const [result, setResult] = useState<RiskResult | null>(null)
   const [savedPatientId, setSavedPatientId] = useState<string | null>(null)
+  const [patientPin, setPatientPin] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -96,12 +95,20 @@ export default function NewPatientPage() {
     }
   }
 
-  const save = async () => {
+  // Create the Supabase auth account and show the credentials screen.
+  const addToWard = async () => {
+    if (!savedPatientId) return
     setSaving(true)
-    if (f.email.trim() && savedPatientId) {
-      await createPatientAccount(f.email.trim(), f.name, savedPatientId)
+    setSaveError(null)
+    const { pin, error } = await createPatientAccount(savedPatientId, f.name)
+    if (error) {
+      setSaveError(error)
+      setSaving(false)
+      return
     }
-    router.push('/dashboard')
+    setPatientPin(pin ?? null)
+    setStep('credentials')
+    setSaving(false)
   }
 
   const done = [f.name.trim(), f.gender, f.admission, f.priorDelirium, f.dementia, f.surgical].filter(Boolean).length
@@ -109,6 +116,58 @@ export default function NewPatientPage() {
 
   if (step === 'calculating') return <LoadingOverlay title="Calculating risk…" sub="Analysing clinical factors" />
 
+  // ── Credentials card shown after account creation ───────────────────────
+  if (step === 'credentials' && savedPatientId && patientPin) {
+    return (
+      <Screen topBar={<TopBar title="Patient added to ward" />}>
+        <div style={{ textAlign: 'center', padding: '28px 0 12px' }}>
+          <Icon name="checkCircle" size={60} style={{ color: 'var(--good)' }} />
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginTop: 16, lineHeight: 1.3 }}>
+            {f.name} has been added.
+          </div>
+          <p style={{ fontSize: 15.5, color: 'var(--text-muted)', marginTop: 8, maxWidth: 340, margin: '8px auto 0' }}>
+            Hand the details below to the patient so they can log in to Revaive.
+          </p>
+        </div>
+
+        <Card style={{ marginTop: 28, marginBottom: 24 }} pad={0}>
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.09em', textTransform: 'uppercase',
+            color: 'var(--text-faint)', padding: '18px 20px 10px' }}>
+            Login credentials
+          </div>
+
+          {([
+            { label: 'Name', value: f.name, mono: false, large: false },
+            { label: 'Patient ID', value: savedPatientId, mono: true, large: false },
+            { label: 'PIN', value: patientPin, mono: true, large: true },
+          ] as const).map(({ label, value, mono, large }) => (
+            <div key={label} style={{ padding: '14px 20px', borderTop: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-faint)',
+                textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 6 }}>
+                {label}
+              </div>
+              <div style={{
+                fontSize: large ? 40 : 15.5,
+                fontWeight: large ? 800 : 600,
+                color: 'var(--text)',
+                fontFamily: mono ? 'monospace' : 'var(--font-ui)',
+                wordBreak: 'break-all',
+                letterSpacing: large ? '.2em' : mono ? '.05em' : 'normal',
+              }}>
+                {value}
+              </div>
+            </div>
+          ))}
+        </Card>
+
+        <Button full size="lg" icon="arrowRight" onClick={() => router.push('/dashboard')}>
+          Continue to ward list
+        </Button>
+      </Screen>
+    )
+  }
+
+  // ── Risk result step ────────────────────────────────────────────────────
   if (step === 'result' && result) {
     const tv = toneVar(result.tone)
     return (
@@ -166,8 +225,8 @@ export default function NewPatientPage() {
             {saveError}
           </div>
         )}
-        <Button full size="lg" icon={saving ? undefined : 'check'} loading={saving} onClick={save}>
-          {saving ? 'Opening ward list…' : 'Add to ward list'}
+        <Button full size="lg" icon={saving ? undefined : 'check'} loading={saving} onClick={addToWard}>
+          {saving ? 'Creating account…' : 'Add patient to ward'}
         </Button>
         <div style={{ height: 12 }} />
         <Button full variant="ghost" disabled={saving} onClick={() => setStep('form')}>Back to form</Button>
@@ -175,6 +234,7 @@ export default function NewPatientPage() {
     )
   }
 
+  // ── Intake form ─────────────────────────────────────────────────────────
   return (
     <Screen topBar={
       <TopBar title="New assessment" sub={`${done} of ${total} complete`}
@@ -200,9 +260,6 @@ export default function NewPatientPage() {
         </Field>
         <Field label="Gender" required error={errs.gender}>
           <CBSelect value={f.gender} onChange={v => set('gender', v)} options={GENDER} placeholder="Select gender" error={errs.gender} />
-        </Field>
-        <Field label="Patient email" htmlFor="f-email" hint="Optional — creates a login so the patient can view their dashboard">
-          <TextInput id="f-email" type="email" value={f.email} onChange={v => set('email', v)} placeholder="patient@example.com" />
         </Field>
       </FormGroup>
 

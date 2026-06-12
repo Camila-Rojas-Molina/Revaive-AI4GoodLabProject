@@ -10,7 +10,10 @@ type Step = 'form' | 'sent'
 
 export default function LoginPage() {
   const [role, setRole] = useState<Role>('patient')
+  // Nurse login fields
   const [email, setEmail] = useState('')
+  // Patient login fields — ID becomes the UUID, PIN becomes the password
+  const [patientId, setPatientId] = useState('')
   const [password, setPassword] = useState('')
   const [step, setStep] = useState<Step>('form')
   const [error, setError] = useState<string | null>(null)
@@ -18,13 +21,25 @@ export default function LoginPage() {
   const [codeLoading, setCodeLoading] = useState(false)
   const router = useRouter()
 
+  const switchRole = (r: Role) => {
+    setRole(r)
+    setError(null)
+    setPassword('')
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
     const supabase = createClient()
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    // Patients sign in with <uuid>@revaive.com + their PIN.
+    // Nurses sign in with their real email + password.
+    const actualEmail = role === 'patient'
+      ? `${patientId.trim()}@revaive.com`
+      : email
+
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: actualEmail, password })
     if (authError) { setError(authError.message); setLoading(false); return }
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -36,7 +51,11 @@ export default function LoginPage() {
 
     if (profile?.role && profile.role !== role) {
       await supabase.auth.signOut()
-      setError(role === 'patient' ? 'This account belongs to a clinician. Please select "I\'m a clinician".' : 'This account belongs to a patient. Please select "I\'m a patient".')
+      setError(
+        role === 'patient'
+          ? 'This account belongs to a clinician. Please select "I\'m a clinician".'
+          : 'This account belongs to a patient. Please select "I\'m a patient".',
+      )
       setLoading(false)
       return
     }
@@ -44,6 +63,7 @@ export default function LoginPage() {
     window.location.href = '/'
   }
 
+  // Magic-link sign-in — nurses only
   async function handleSendCode() {
     if (!email) { setError('Please enter your email first.'); return }
     setCodeLoading(true)
@@ -105,7 +125,7 @@ export default function LoginPage() {
           {([['patient', "I'm a patient", 'heart'], ['nurse', "I'm a clinician", 'stethoscope']] as const).map(([id, label, ic]) => {
             const on = role === id
             return (
-              <button key={id} role="tab" aria-selected={on} onClick={() => { setRole(id); setError(null) }}
+              <button key={id} role="tab" aria-selected={on} onClick={() => switchRole(id)}
                 style={{ flex: 1, minHeight: 56, borderRadius: 13, border: 'none', cursor: 'pointer',
                   fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 17,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
@@ -119,22 +139,47 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <Field label="Email" htmlFor="l-email">
-            <TextInput id="l-email" type="email" value={email} onChange={setEmail}
-              placeholder="Enter your email" />
+
+          {role === 'patient' ? (
+            <Field label="Patient ID" htmlFor="l-pid">
+              <TextInput
+                id="l-pid"
+                value={patientId}
+                onChange={setPatientId}
+                placeholder="Enter your 8-character patient ID"
+              />
+            </Field>
+          ) : (
+            <Field label="Email" htmlFor="l-email">
+              <TextInput
+                id="l-email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="Enter your email"
+              />
+            </Field>
+          )}
+
+          <Field label={role === 'patient' ? 'PIN' : 'Password'} htmlFor="l-pw">
+            <TextInput
+              id="l-pw"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder={role === 'patient' ? 'Enter your 4-digit PIN' : 'Enter your password'}
+            />
           </Field>
 
-          <Field label="Password" htmlFor="l-pw">
-            <TextInput id="l-pw" type="password" value={password} onChange={setPassword}
-              placeholder="Enter your password" />
-          </Field>
-
-          <button type="button" onClick={handleSendCode} disabled={codeLoading}
-            style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--primary)', fontFamily: 'var(--font-ui)', fontSize: 15, fontWeight: 600,
-              padding: '6px 0', opacity: codeLoading ? 0.6 : 1 }}>
-            {codeLoading ? 'Sending…' : 'Send me a code'}
-          </button>
+          {/* Magic-link option for nurses only */}
+          {role === 'nurse' && (
+            <button type="button" onClick={handleSendCode} disabled={codeLoading}
+              style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--primary)', fontFamily: 'var(--font-ui)', fontSize: 15, fontWeight: 600,
+                padding: '6px 0', opacity: codeLoading ? 0.6 : 1 }}>
+              {codeLoading ? 'Sending…' : 'Send me a code'}
+            </button>
+          )}
 
           {error && (
             <div style={{ fontSize: 15, color: 'var(--danger)', background: 'var(--danger-soft)',
