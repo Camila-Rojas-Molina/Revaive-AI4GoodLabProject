@@ -227,18 +227,37 @@ export const SegRadio = ({ value, onChange, options, error }: {
 
 export const Stepper = ({ id, value, onChange, min = 0, max = 120, unit }: {
   id?: string; value: number; onChange: (v: number) => void; min?: number; max?: number; unit?: string
-}) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-    <button type="button" onClick={() => onChange(Math.max(min, value - 1))} style={stepBtnStyle}>−</button>
-    <div style={{ ...inputBase, width: 130, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 800, fontSize: 24, minHeight: 'var(--tap)' }}>
-      <input id={id} type="number" value={value} min={min} max={max}
-        onChange={e => onChange(Math.max(min, Math.min(max, parseInt(e.target.value) || min)))}
-        style={{ width: 64, border: 'none', outline: 'none', textAlign: 'center', fontSize: 24, fontWeight: 800, background: 'transparent', color: 'var(--text)', fontFamily: 'var(--font-ui)' }} />
-      {unit && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)' }}>{unit}</span>}
+}) => {
+  const [raw, setRaw] = useState(String(value))
+  useEffect(() => { setRaw(String(value)) }, [value])
+
+  const commit = (s: string) => {
+    const n = parseInt(s, 10)
+    const clamped = isNaN(n) ? min : Math.max(min, Math.min(max, n))
+    onChange(clamped)
+    setRaw(String(clamped))
+  }
+
+  const step = (delta: number) => {
+    const next = Math.max(min, Math.min(max, value + delta))
+    onChange(next)
+    setRaw(String(next))
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <button type="button" onClick={() => step(-1)} style={stepBtnStyle}>−</button>
+      <div style={{ ...inputBase, width: 130, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 800, fontSize: 24, minHeight: 'var(--tap)' }}>
+        <input id={id} type="number" value={raw} min={min} max={max}
+          onChange={e => setRaw(e.target.value)}
+          onBlur={e => commit(e.target.value)}
+          style={{ width: 64, border: 'none', outline: 'none', textAlign: 'center', fontSize: 24, fontWeight: 800, background: 'transparent', color: 'var(--text)', fontFamily: 'var(--font-ui)' }} />
+        {unit && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)' }}>{unit}</span>}
+      </div>
+      <button type="button" onClick={() => step(1)} style={stepBtnStyle}>+</button>
     </div>
-    <button type="button" onClick={() => onChange(Math.min(max, value + 1))} style={stepBtnStyle}>+</button>
-  </div>
-)
+  )
+}
 const stepBtnStyle: React.CSSProperties = {
   width: 'var(--tap)', height: 'var(--tap)', borderRadius: 'var(--r-sm)', cursor: 'pointer',
   border: '1.5px solid var(--line-strong)', background: 'var(--surface)', color: 'var(--primary)',
