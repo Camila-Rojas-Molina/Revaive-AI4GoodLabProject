@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 import { Icon, Button, Field, TextInput } from '@/components/ui'
 
@@ -66,35 +66,10 @@ export default function LoginPage() {
     }}>
       <div style={{ width: '100%', maxWidth: 480 }}>
 
-        {/* Wordmark */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 14,
-          color: 'var(--primary)', justifyContent: 'center', marginBottom: 10,
-        }}>
-          <Icon name="logo" size={44} />
-          <span style={{
-            fontFamily: "'Geist', 'Geist Sans', system-ui, sans-serif",
-            fontWeight: 300,
-            fontSize: 38,
-            letterSpacing: '0.15em',
-            color: 'var(--primary)',
-          }}>
-            Revaive
-          </span>
+        {/* Logo */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 36 }}>
+          <Image src="/big_logo.png" alt="Revaive" width={300} height={100} />
         </div>
-
-        {/* Tagline */}
-        <p style={{
-          textAlign: 'center',
-          fontSize: 14,
-          fontStyle: 'italic',
-          color: 'var(--text-faint)',
-          fontWeight: 400,
-          margin: '0 0 36px',
-          letterSpacing: '0.02em',
-        }}>
-          Cognitive recovery, together.
-        </p>
 
         {/* Role toggle */}
         <div

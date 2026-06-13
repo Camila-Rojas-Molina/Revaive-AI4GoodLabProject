@@ -18,7 +18,8 @@ def get_response(patient_message: str, conversation_history: list, patient_profi
             "family": "their family"
         }
     
-    system_prompt = build_system_prompt(patient_profile, cognitive_score)
+    selected_domains = patient_profile.get("selected_domains") if patient_profile else None
+    system_prompt = build_system_prompt(patient_profile, cognitive_score, selected_domains=selected_domains)
     
     messages = [{"role": "system", "content": system_prompt}]
     messages.extend(conversation_history)

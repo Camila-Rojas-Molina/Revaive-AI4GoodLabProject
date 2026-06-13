@@ -235,74 +235,18 @@ export default function ActiveSessionPage() {
     router.push('/session')
   }
 
-  const statusText = isProcessing
-    ? 'Just a moment…'
-    : isBotTalking
-      ? 'Speaking…'
-      : isSpeaking
-        ? 'Listening… take your time.'
-        : 'Listening… take your time.'
+  const isIdle = phase === 'idle' || phase === 'starting'
+
+  const titleText = isIdle
+    ? (phase === 'starting' ? 'Connecting…' : "Ready for today's session?")
+    : (isProcessing ? 'Just a moment…' : (currentQuestion || '…'))
+
+  const statusText = isIdle
+    ? (phase === 'starting' ? 'Connecting…' : 'Tap to start')
+    : (isBotTalking ? 'Speaking…' : 'Listening… take your time.')
 
   const BG = 'linear-gradient(160deg, var(--primary-2) 0%, var(--primary) 100%)'
 
-  // ── Idle / Starting ───────────────────────────────────────────────────────
-  if (phase === 'idle' || phase === 'starting') {
-    const starting = phase === 'starting'
-    return (
-      <div style={{
-        minHeight: '100dvh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        background: BG, color: 'var(--on-primary)',
-        padding: '0 32px', textAlign: 'center', gap: 0,
-      }}>
-        <h1 style={{ fontSize: 28, fontWeight: 300, margin: '0 0 12px', letterSpacing: '.01em' }}>
-          Ready for today's session?
-        </h1>
-        <p style={{ fontSize: 15, opacity: .65, margin: '0 0 52px', maxWidth: 260, lineHeight: 1.65 }}>
-          Tap the mic to begin. Your companion will guide you.
-        </p>
-
-        <button
-          onClick={startSession}
-          disabled={starting}
-          aria-label="Start session"
-          style={{ background: 'none', border: 'none', cursor: starting ? 'default' : 'pointer',
-            padding: 0, opacity: starting ? .65 : 1, transition: 'opacity .2s' }}
-        >
-          <div style={{
-            width: 160, height: 160, borderRadius: '50%',
-            background: 'rgba(255,255,255,.16)',
-            display: 'grid', placeItems: 'center',
-          }}>
-            <div style={{
-              width: 112, height: 112, borderRadius: '50%',
-              background: 'rgba(255,255,255,.92)',
-              display: 'grid', placeItems: 'center',
-            }}>
-              <div style={{ color: 'var(--primary)' }}>
-                <Icon name="mic" size={44} />
-              </div>
-            </div>
-          </div>
-        </button>
-
-        <p style={{ fontSize: 14, opacity: .6, marginTop: 24, fontWeight: 500 }}>
-          {starting ? 'Connecting…' : 'Tap to start'}
-        </p>
-
-        {error && (
-          <div style={{
-            fontSize: 14, color: '#fff', background: 'rgba(220,50,50,.35)',
-            borderRadius: 12, padding: '12px 18px', marginTop: 24, maxWidth: 300,
-          }}>
-            {error}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // ── Active / Ending ───────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -321,18 +265,108 @@ export default function ActiveSessionPage() {
       `}</style>
 
       <div style={{
-        minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+        position: 'relative', minHeight: '100dvh', display: 'flex', flexDirection: 'column',
         background: BG, color: 'var(--on-primary)',
       }}>
 
-        {/* Header */}
+        {/* Title + mic + status — absolutely centered on the full viewport */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 20, padding: '0 36px',
+          pointerEvents: 'none',
+        }}>
+
+          {/* Title area */}
+          <div style={{ textAlign: 'center' }}>
+            <p style={{
+              margin: 0,
+              fontSize: isIdle ? 28 : 22,
+              fontWeight: 300,
+              lineHeight: isIdle ? 1.3 : 1.55,
+              letterSpacing: '.01em',
+              maxWidth: isIdle ? 340 : 700,
+              opacity: (!isIdle && !currentQuestion && !isProcessing) ? 0.45 : 1,
+            }}>
+              {titleText}
+            </p>
+            {phase === 'idle' && (
+              <p style={{
+                fontSize: 15, opacity: .65, margin: '12px 0 0',
+                whiteSpace: 'nowrap', lineHeight: 1.65,
+              }}>
+                Tap the mic to begin — Revi will guide you.
+              </p>
+            )}
+          </div>
+
+          {/* Mic button + status text */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+            <button
+              onClick={isIdle ? startSession : undefined}
+              disabled={phase === 'starting'}
+              aria-label={isIdle ? 'Start session' : 'Microphone active'}
+              style={{
+                background: 'none', border: 'none', padding: 0,
+                cursor: phase === 'idle' ? 'pointer' : 'default',
+                opacity: phase === 'starting' ? .65 : 1,
+                transition: 'opacity .2s',
+                pointerEvents: 'auto',
+              }}
+            >
+              <div style={{ position: 'relative', width: 280, height: 280 }}>
+                {isSpeaking && (
+                  <>
+                    <div className="vad-ring" />
+                    <div className="vad-ring" />
+                    <div className="vad-ring" />
+                  </>
+                )}
+                <div style={{
+                  position: 'relative', zIndex: 1,
+                  width: 280, height: 280, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.2)',
+                  display: 'grid', placeItems: 'center',
+                  transition: 'background .25s',
+                }}>
+                  <div style={{
+                    width: 200, height: 200, borderRadius: '50%',
+                    background: isProcessing ? 'rgba(245,240,232,.6)' : '#f5f0e8',
+                    display: 'grid', placeItems: 'center',
+                    transition: 'background .25s',
+                  }}>
+                    <div style={{ color: 'var(--primary)' }}>
+                      <Icon name="mic" size={72} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            <p style={{ fontSize: 14, opacity: .65, margin: 0, fontWeight: 500 }}>
+              {statusText}
+            </p>
+
+            {error && (
+              <div style={{
+                fontSize: 13, color: '#fff', background: 'rgba(220,50,50,.35)',
+                borderRadius: 10, padding: '10px 16px', maxWidth: 280, textAlign: 'center',
+              }}>
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Header — renders above the absolute center layer */}
         <header style={{
           padding: '20px 24px', display: 'flex', flexShrink: 0,
           alignItems: 'center', justifyContent: 'space-between',
         }}>
           <button
-            onClick={handleEnd}
-            aria-label="End session"
+            onClick={isIdle ? () => router.push('/session') : handleEnd}
+            aria-label={isIdle ? 'Go back' : 'End session'}
             style={{
               width: 44, height: 44, borderRadius: 12, cursor: 'pointer',
               border: '1px solid rgba(255,255,255,.22)', color: 'inherit',
@@ -351,86 +385,32 @@ export default function ActiveSessionPage() {
           </span>
         </header>
 
-        {/* Question text — hero, bare on background */}
-        <div style={{
-          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '10% 36px 56px',
-        }}>
-          <p style={{
-            margin: 0, fontSize: 30, fontWeight: 300, lineHeight: 1.5,
-            textAlign: 'center', opacity: currentQuestion ? 1 : 0.45,
-            letterSpacing: '.01em',
-          }}>
-            {currentQuestion || '…'}
-          </p>
-        </div>
+        {/* Spacer — pushes bottom to bottom of flex column */}
+        <div style={{ flex: 1 }} />
 
-        {/* Mic + ripple + status */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: 20, flexShrink: 0, paddingBottom: 36,
-        }}>
-          <div style={{ position: 'relative', width: 280, height: 280 }}>
-            {isSpeaking && (
-              <>
-                <div className="vad-ring" />
-                <div className="vad-ring" />
-                <div className="vad-ring" />
-              </>
-            )}
-            <div style={{
-              position: 'relative', zIndex: 1,
-              width: 280, height: 280, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              display: 'grid', placeItems: 'center',
-              transition: 'background .25s',
-            }}>
-              <div style={{
-                width: 200, height: 200, borderRadius: '50%',
-                background: isProcessing ? 'rgba(245,240,232,.6)' : '#f5f0e8',
-                display: 'grid', placeItems: 'center',
-                transition: 'background .25s',
-              }}>
-                <div style={{ color: 'var(--primary)' }}>
-                  <Icon name="mic" size={72} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <p style={{ fontSize: 14, opacity: .7, margin: 0, fontWeight: 500 }}>
-            {statusText}
-          </p>
-
-          {error && (
-            <div style={{
-              fontSize: 13, color: '#fff', background: 'rgba(220,50,50,.35)',
-              borderRadius: 10, padding: '10px 16px', maxWidth: 280, textAlign: 'center',
-            }}>
-              {error}
-            </div>
+        {/* Bottom — renders above the absolute center layer */}
+        <div style={{ padding: '0 24px 28px', flexShrink: 0 }}>
+          {!isIdle ? (
+            <button
+              onClick={handleEnd}
+              disabled={phase === 'ending'}
+              style={{
+                width: '100%', height: 54, borderRadius: 999, cursor: 'pointer',
+                border: '1.5px solid rgba(255,100,100,.5)',
+                background: 'rgba(255,80,80,.1)',
+                color: 'rgba(255,150,150,1)',
+                fontWeight: 600, fontSize: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+                opacity: phase === 'ending' ? .5 : 1,
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              <Icon name="stop" size={17} />
+              {phase === 'ending' ? 'Saving session…' : 'End Session'}
+            </button>
+          ) : (
+            <div style={{ height: 54 }} />
           )}
-        </div>
-
-        {/* End Session */}
-        <div style={{ padding: '0 24px 44px', flexShrink: 0 }}>
-          <button
-            onClick={handleEnd}
-            disabled={phase === 'ending'}
-            style={{
-              width: '100%', height: 54, borderRadius: 999, cursor: 'pointer',
-              border: '1.5px solid rgba(255,100,100,.5)',
-              background: 'rgba(255,80,80,.1)',
-              color: 'rgba(255,150,150,1)',
-              fontWeight: 600, fontSize: 16,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
-              opacity: phase === 'ending' ? .5 : 1,
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            <Icon name="stop" size={17} />
-            {phase === 'ending' ? 'Saving session…' : 'End Session'}
-          </button>
         </div>
       </div>
     </>

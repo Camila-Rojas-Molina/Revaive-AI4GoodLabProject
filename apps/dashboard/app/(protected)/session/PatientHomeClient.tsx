@@ -1,11 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Screen, TopBar, IconButton, BottomNav, Button, Card, Icon } from '@/components/ui'
+import { Screen, TopBar, IconButton, BottomNav, Card, Icon } from '@/components/ui'
 
 const PATIENT_NAV = [
   { href: '/session', label: 'Home', icon: 'home' },
-  { href: '/progress', label: 'Progress', icon: 'chart' },
   { href: '/profile', label: 'Profile', icon: 'user' },
 ]
 
@@ -43,10 +42,9 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
           <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
             Session complete!
           </div>
-          <p style={{ fontSize: 17, color: 'var(--text-muted)', margin: '0 0 24px', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 17, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
             You finished today's session. See you tomorrow!
           </p>
-          <Button variant="soft" onClick={() => router.push('/progress')}>View my progress</Button>
         </Card>
       ) : (
         <button onClick={() => router.push(`/session/active?patientId=${patientId}`)}
@@ -78,30 +76,6 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
         </button>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 22 }}>
-        <Card pad={20} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ width: 50, height: 50, borderRadius: 14, display: 'grid', placeItems: 'center',
-            background: 'var(--primary-soft)', color: 'var(--primary)', flexShrink: 0 }}>
-            <Icon name="flame" size={26} /></span>
-          <div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>—</div>
-            <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>day streak</div>
-          </div>
-        </Card>
-        <Card pad={20} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span style={{ width: 50, height: 50, borderRadius: 14, display: 'grid', placeItems: 'center',
-            background: 'var(--primary-soft)', color: 'var(--primary)', flexShrink: 0 }}>
-            <Icon name="checkCircle" size={26} /></span>
-          <div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>—</div>
-            <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>sessions done</div>
-          </div>
-        </Card>
-      </div>
-
-      <Button variant="outline" full icon="chart" onClick={() => router.push('/progress')}>
-        View Progress
-      </Button>
     </Screen>
   )
 }

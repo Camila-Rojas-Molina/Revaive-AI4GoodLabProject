@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -395,10 +396,7 @@ export const TopBar = ({ title, brand, left, right, sub }: {
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
       {left}
       {brand ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11, color: 'var(--primary)' }}>
-          <Icon name="logo" size={30} />
-          <span style={{ fontWeight: 800, fontSize: 23, letterSpacing: '-.02em' }}>Revaive</span>
-        </div>
+        <Image src="/big_logo.png" alt="Revaive" width={124} height={40} style={{ display: 'block' }} />
       ) : (
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-.02em',
