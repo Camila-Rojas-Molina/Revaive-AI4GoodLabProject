@@ -193,7 +193,7 @@ export default function ActiveSessionPage() {
     try {
       const form = new FormData()
       form.append('patient_id', patientId)
-      const res = await fetch(`${API}/voice`, { method: 'POST', body: form })
+      const res = await fetch(`${API}/voice/start`, { method: 'POST', body: form })
       if (!res.ok) throw new Error('Could not start session')
       const data = await res.json()
 
@@ -243,6 +243,8 @@ export default function ActiveSessionPage() {
         ? 'Listening… take your time.'
         : 'Listening… take your time.'
 
+  const BG = 'linear-gradient(160deg, var(--primary-2) 0%, var(--primary) 100%)'
+
   // ── Idle / Starting ───────────────────────────────────────────────────────
   if (phase === 'idle' || phase === 'starting') {
     const starting = phase === 'starting'
@@ -250,17 +252,16 @@ export default function ActiveSessionPage() {
       <div style={{
         minHeight: '100dvh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(160deg, var(--primary-2) 0%, var(--primary) 100%)',
-        color: 'var(--on-primary)', padding: '0 28px', textAlign: 'center',
+        background: BG, color: 'var(--on-primary)',
+        padding: '0 32px', textAlign: 'center', gap: 0,
       }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 10px' }}>
+        <h1 style={{ fontSize: 28, fontWeight: 300, margin: '0 0 12px', letterSpacing: '.01em' }}>
           Ready for today's session?
         </h1>
-        <p style={{ fontSize: 15, opacity: .7, margin: '0 0 44px', maxWidth: 260, lineHeight: 1.6 }}>
-          Tap the mic to begin. Your AI companion will guide you.
+        <p style={{ fontSize: 15, opacity: .65, margin: '0 0 52px', maxWidth: 260, lineHeight: 1.65 }}>
+          Tap the mic to begin. Your companion will guide you.
         </p>
 
-        {/* Mic circle button — same style as during recording */}
         <button
           onClick={startSession}
           disabled={starting}
@@ -269,30 +270,30 @@ export default function ActiveSessionPage() {
             padding: 0, opacity: starting ? .65 : 1, transition: 'opacity .2s' }}
         >
           <div style={{
-            width: 320, height: 320, borderRadius: '50%',
-            background: 'rgba(255,255,255,.18)',
+            width: 160, height: 160, borderRadius: '50%',
+            background: 'rgba(255,255,255,.16)',
             display: 'grid', placeItems: 'center',
           }}>
             <div style={{
-              width: 220, height: 220, borderRadius: '50%',
+              width: 112, height: 112, borderRadius: '50%',
               background: 'rgba(255,255,255,.92)',
               display: 'grid', placeItems: 'center',
             }}>
               <div style={{ color: 'var(--primary)' }}>
-                <Icon name="mic" size={80} />
+                <Icon name="mic" size={44} />
               </div>
             </div>
           </div>
         </button>
 
-        <p style={{ fontSize: 15, opacity: .7, marginTop: 28, fontWeight: 500 }}>
+        <p style={{ fontSize: 14, opacity: .6, marginTop: 24, fontWeight: 500 }}>
           {starting ? 'Connecting…' : 'Tap to start'}
         </p>
 
         {error && (
           <div style={{
             fontSize: 14, color: '#fff', background: 'rgba(220,50,50,.35)',
-            borderRadius: 12, padding: '12px 18px', marginTop: 20, maxWidth: 300,
+            borderRadius: 12, padding: '12px 18px', marginTop: 24, maxWidth: 300,
           }}>
             {error}
           </div>
@@ -306,12 +307,12 @@ export default function ActiveSessionPage() {
     <>
       <style>{`
         @keyframes ripple {
-          0%   { transform: scale(1);   opacity: .55; }
-          100% { transform: scale(2.4); opacity: 0;   }
+          0%   { transform: scale(1);   opacity: .5; }
+          100% { transform: scale(2.6); opacity: 0;  }
         }
         .vad-ring {
           position: absolute; inset: 0; border-radius: 50%;
-          border: 2px solid rgba(255,255,255,.55);
+          border: 2px solid rgba(255,255,255,.45);
           animation: ripple 1.8s ease-out infinite;
           pointer-events: none;
         }
@@ -321,54 +322,55 @@ export default function ActiveSessionPage() {
 
       <div style={{
         minHeight: '100dvh', display: 'flex', flexDirection: 'column',
-        background: 'linear-gradient(160deg, var(--primary-2) 0%, var(--primary) 100%)',
-        color: 'var(--on-primary)',
+        background: BG, color: 'var(--on-primary)',
       }}>
 
         {/* Header */}
         <header style={{
-          padding: '20px 24px', display: 'flex',
-          alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          padding: '20px 24px', display: 'flex', flexShrink: 0,
+          alignItems: 'center', justifyContent: 'space-between',
         }}>
           <button
             onClick={handleEnd}
             aria-label="End session"
             style={{
-              width: 48, height: 48, borderRadius: 14, cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,.25)', color: 'inherit',
+              width: 44, height: 44, borderRadius: 12, cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,.22)', color: 'inherit',
               background: 'rgba(255,255,255,.08)', display: 'grid', placeItems: 'center',
             }}
           >
-            <Icon name="x" size={22} />
+            <Icon name="x" size={20} />
           </button>
 
           <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            fontWeight: 700, fontSize: 16, padding: '8px 16px',
-            borderRadius: 999, background: 'rgba(255,255,255,.12)',
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            fontWeight: 600, fontSize: 15, padding: '7px 14px',
+            borderRadius: 999, background: 'rgba(255,255,255,.11)',
           }}>
-            <Icon name="clock" size={18} />{mm}:{ss}
+            <Icon name="clock" size={16} />{mm}:{ss}
           </span>
         </header>
 
-        {/* Current question */}
-        <div style={{ padding: '4px 24px 0', flexShrink: 0 }}>
-          <div style={{
-            background: 'rgba(255,255,255,.13)', borderRadius: 20,
-            padding: '18px 22px', fontSize: 19, fontWeight: 600,
-            lineHeight: 1.45, textAlign: 'center', minHeight: 68,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+        {/* Question text — hero, bare on background */}
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '10% 36px 56px',
+        }}>
+          <p style={{
+            margin: 0, fontSize: 30, fontWeight: 300, lineHeight: 1.5,
+            textAlign: 'center', opacity: currentQuestion ? 1 : 0.45,
+            letterSpacing: '.01em',
           }}>
-            {currentQuestion ? `"${currentQuestion}"` : '…'}
-          </div>
+            {currentQuestion || '…'}
+          </p>
         </div>
 
-        {/* Mic + ripple rings */}
+        {/* Mic + ripple + status */}
         <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 26,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: 20, flexShrink: 0, paddingBottom: 36,
         }}>
-          <div style={{ position: 'relative', width: 320, height: 320 }}>
+          <div style={{ position: 'relative', width: 280, height: 280 }}>
             {isSpeaking && (
               <>
                 <div className="vad-ring" />
@@ -378,58 +380,55 @@ export default function ActiveSessionPage() {
             )}
             <div style={{
               position: 'relative', zIndex: 1,
-              width: 320, height: 320, borderRadius: '50%',
-              background: isSpeaking
-                ? 'rgba(255,255,255,.28)'
-                : 'rgba(255,255,255,.14)',
+              width: 280, height: 280, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.2)',
               display: 'grid', placeItems: 'center',
               transition: 'background .25s',
             }}>
               <div style={{
-                width: 220, height: 220, borderRadius: '50%',
-                background: isProcessing
-                  ? 'rgba(255,255,255,.4)'
-                  : 'rgba(255,255,255,.92)',
+                width: 200, height: 200, borderRadius: '50%',
+                background: isProcessing ? 'rgba(245,240,232,.6)' : '#f5f0e8',
                 display: 'grid', placeItems: 'center',
                 transition: 'background .25s',
               }}>
                 <div style={{ color: 'var(--primary)' }}>
-                  <Icon name="mic" size={80} />
+                  <Icon name="mic" size={72} />
                 </div>
               </div>
             </div>
           </div>
 
-          <p style={{ fontSize: 15, opacity: .8, margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 14, opacity: .7, margin: 0, fontWeight: 500 }}>
             {statusText}
           </p>
 
           {error && (
             <div style={{
               fontSize: 13, color: '#fff', background: 'rgba(220,50,50,.35)',
-              borderRadius: 10, padding: '10px 16px', maxWidth: 290, textAlign: 'center',
+              borderRadius: 10, padding: '10px 16px', maxWidth: 280, textAlign: 'center',
             }}>
               {error}
             </div>
           )}
         </div>
 
-        {/* End Session button */}
+        {/* End Session */}
         <div style={{ padding: '0 24px 44px', flexShrink: 0 }}>
           <button
             onClick={handleEnd}
             disabled={phase === 'ending'}
             style={{
-              width: '100%', height: 58, borderRadius: 999, cursor: 'pointer',
-              border: '2px solid rgba(255,100,100,.55)',
-              background: 'rgba(255,80,80,.12)',
-              color: 'rgba(255,140,140,1)',
-              fontWeight: 700, fontSize: 17,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: '100%', height: 54, borderRadius: 999, cursor: 'pointer',
+              border: '1.5px solid rgba(255,100,100,.5)',
+              background: 'rgba(255,80,80,.1)',
+              color: 'rgba(255,150,150,1)',
+              fontWeight: 600, fontSize: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
               opacity: phase === 'ending' ? .5 : 1,
+              fontFamily: 'var(--font-ui)',
             }}
           >
-            <Icon name="stop" size={18} />
+            <Icon name="stop" size={17} />
             {phase === 'ending' ? 'Saving session…' : 'End Session'}
           </button>
         </div>

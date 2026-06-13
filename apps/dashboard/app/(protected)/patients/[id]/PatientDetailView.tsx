@@ -146,6 +146,7 @@ export default function PatientDetailView({ patient, trend }: {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [showAllSessions, setShowAllSessions] = useState(false)
   const [selectedDomains, setSelectedDomains] = useState<string[]>([])
   // Seed from the prop; refreshed by the effect below using patient.id.
   const [sessions, setSessions] = useState<Session[]>(patient.sessions ?? [])
@@ -193,10 +194,8 @@ export default function PatientDetailView({ patient, trend }: {
   const tv = toneVar(tone)
   const ini = initials(patient.name)
   const firstName = patient.name.split(' ')[0]
-  const latestSession = sessions[0]
-  const hasEscalation = sessions.some(s => s.flag_escalate)
   const sessionCount = sessions.length
-  const lastScore = latestSession?.cognitive_score
+  const lastScore = sessions.find(s => s.cognitive_score != null && s.cognitive_score > 0)?.cognitive_score ?? null
   const trendDir = getTrendDir(sessions)
 
   // Build chart data from sessions (desc order → reverse to oldest-first, take last 7 with scores).
@@ -251,14 +250,12 @@ export default function PatientDetailView({ patient, trend }: {
     ['Age', patient.age ? `${patient.age} years` : '—'],
     ['Gender', patient.sex ?? '—'],
     ['Surgical category', patient.surgery_type ?? '—'],
-    ['Model confidence', (patient.pod_risk_score ?? 0).toFixed(2)],
   ]
 
   return (
     <Screen
       topBar={
         <TopBar title={patient.name}
-          sub={`Ward 4B${sessionCount > 0 ? ` · Day ${sessionCount}` : ''}`}
           left={<IconButton name="chevLeft" label="Back" onClick={() => router.push('/dashboard')} />}
           right={
             <KebabMenu items={[
@@ -277,20 +274,6 @@ export default function PatientDetailView({ patient, trend }: {
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
       />
-
-      {hasEscalation && (
-        <div style={{
-          display: 'flex', gap: 12, alignItems: 'center', padding: '14px 18px',
-          background: 'var(--danger-soft)',
-          border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
-          borderRadius: 'var(--r-md)', marginBottom: 18,
-        }}>
-          <Icon name="alert" size={22} style={{ color: 'var(--danger)', flexShrink: 0 }} />
-          <p style={{ margin: 0, fontSize: 15, color: 'var(--danger)', fontWeight: 600 }}>
-            Significant cognitive decline detected. Clinical review recommended.
-          </p>
-        </div>
-      )}
 
       {/* Identity + risk */}
       <Card style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 18 }}>
@@ -325,9 +308,6 @@ export default function PatientDetailView({ patient, trend }: {
         </div>
         <div style={{ textAlign: 'right' }}>
           <Pill tone={tone}>{patient.pod_risk_label === 'medium' ? 'Moderate' : patient.pod_risk_label} risk</Pill>
-          <div style={{ fontSize: 13.5, color: 'var(--text-faint)', marginTop: 6, fontWeight: 600 }}>
-            {(patient.pod_risk_score ?? 0).toFixed(2)} confidence
-          </div>
         </div>
       </Card>
 
@@ -347,7 +327,12 @@ export default function PatientDetailView({ patient, trend }: {
         {[
           ['Sessions', sessionCount],
           ['Cognitive score', lastScore != null ? lastScore : '—'],
-          ['Adherence', sessionCount > 2 ? '86%' : '—'],
+          ['Avg session duration', (() => {
+            const scored = sessions.filter(s => s.duration_seconds != null)
+            if (scored.length === 0) return '—'
+            const avg = scored.reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / scored.length
+            return `${Math.round(avg / 60)} min`
+          })()],
         ].map(([l, v], i) => (
           <div key={String(l)} style={{ flex: 1, borderLeft: i ? '1px solid var(--line)' : 'none', padding: '16px 8px' }}>
             <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>{v}</div>
@@ -364,7 +349,7 @@ export default function PatientDetailView({ patient, trend }: {
               fontSize: 14, fontWeight: 700, letterSpacing: '.08em',
               textTransform: 'uppercase', color: 'var(--text-faint)',
             }}>
-              Cognitive Score — Past 7 Days
+              Cognitive Score — Per Session
             </div>
             {isMockData
               ? <Pill tone="neutral">No data yet</Pill>
@@ -421,7 +406,7 @@ export default function PatientDetailView({ patient, trend }: {
             Session Reports
           </div>
 
-          {sessions.map((session, i) => {
+          {(showAllSessions ? sessions : sessions.slice(0, 4)).map((session, i) => {
             const rowKey = session.id ?? session.session_date
             const prevSession = sessions[i + 1]
             const isExpanded = expandedId === rowKey
@@ -462,7 +447,7 @@ export default function PatientDetailView({ patient, trend }: {
 
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>
-                      {session.cognitive_score != null ? Math.round(session.cognitive_score) : '—'}
+                      {session.cognitive_score != null ? Math.round(session.cognitive_score) : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-faint)' }}>Pending</span>}
                     </div>
                     {scoreDelta != null && (
                       <div style={{
@@ -559,6 +544,22 @@ export default function PatientDetailView({ patient, trend }: {
               </div>
             )
           })}
+
+          {sessions.length > 4 && (
+            <div style={{ borderTop: '1px solid var(--line)', padding: '14px 20px', textAlign: 'center' }}>
+              <button
+                onClick={() => setShowAllSessions(v => !v)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 14, fontWeight: 600, color: 'var(--primary)',
+                  fontFamily: 'var(--font-ui)', padding: '4px 12px',
+                  textDecoration: 'underline', textUnderlineOffset: 3,
+                }}
+              >
+                {showAllSessions ? 'Show fewer' : `View all ${sessions.length} sessions`}
+              </button>
+            </div>
+          )}
         </Card>
       )}
 

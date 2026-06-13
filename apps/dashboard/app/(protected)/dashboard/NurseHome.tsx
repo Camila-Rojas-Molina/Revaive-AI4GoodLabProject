@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { getPatientPins } from './actions'
 import {
   Screen, TopBar, IconButton, BottomNav, Button, Card,
-  Pill, SearchBar, EmptyState, Icon, FilterChips, KebabMenu, ConfirmDialog,
+  Pill, SearchBar, EmptyState, FilterChips, KebabMenu, ConfirmDialog,
   initials, riskTone,
 } from '@/components/ui'
 
@@ -23,7 +23,6 @@ type Patient = {
   sessions: { cognitive_score: number | null; session_date: string; flag_escalate: boolean; created_at: string }[]
 }
 
-const FILTER_LABELS = ['All', 'Low', 'Moderate', 'High']
 
 export default function NurseHome({ patients: initial }: { patients: Patient[] }) {
   const [q, setQ] = useState('')
@@ -48,7 +47,6 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
   const filterOptions = [
     { label: 'All', count: patients.length },
     { label: 'Low', count: counts.low },
-    { label: 'Moderate', count: counts.medium },
     { label: 'High', count: counts.high },
   ]
 
@@ -56,7 +54,6 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
     const matchQ = !query || p.name.toLowerCase().includes(query) || (p.surgery_type || '').toLowerCase().includes(query)
     const matchF = filter === 'All'
       || (filter === 'Low' && p.pod_risk_label === 'low')
-      || (filter === 'Moderate' && p.pod_risk_label === 'medium')
       || (filter === 'High' && p.pod_risk_label === 'high')
     return matchQ && matchF
   })
@@ -113,7 +110,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
           Your patients
         </h1>
         <p style={{ fontSize: 18, color: 'var(--text-muted)', margin: 0 }}>
-          Ward 4B · {patients.length} active assessment{patients.length === 1 ? '' : 's'}
+          {patients.length} active assessment{patients.length === 1 ? '' : 's'}
         </p>
       </div>
 
