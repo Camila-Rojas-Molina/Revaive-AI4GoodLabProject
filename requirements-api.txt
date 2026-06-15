@@ -12,3 +12,5 @@ openai
 elevenlabs
 python-multipart
 nltk
+spacy
+sentence-transformers

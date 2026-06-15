@@ -10,7 +10,7 @@ Revaive — an AI prototype that detects postoperative delirium (POD) risk and p
 
 **Tech stack:** FastAPI (backend), Next.js / React (frontend), Supabase (DB/auth), Whisper/OpenAI + ElevenLabs (voice + LLM), Python tooling for models.
 
-**Quick dev run:** create a Python venv, pip install -r requirements.txt, run the API with uvicorn api.main:app --reload, and start the merged frontend from dashboard with npm ci && npm run dev.
+**Quick dev run:** create a Python venv, `pip install -r requirements-api.txt`, run the API with `uvicorn api.main:app --reload`, and start the frontend from `apps/dashboard` with `npm ci && npm run dev`.
 
 **Demo note:** For the hackathon we deploy a single Next.js app (merged into dashboard) and expose one Vercel link for the demo
 
@@ -18,7 +18,7 @@ Revaive — an AI prototype that detects postoperative delirium (POD) risk and p
 
 ## Architecture
 
-- **Pillar 1** — Risk prediction: nurse enters patient features at admission; XGBoost classifier outputs High / Medium / Low POD risk.
+- **Pillar 1** — Risk prediction: nurse enters patient features at admission; Random Forest classifier outputs High / Medium / Low POD risk.
 - **Pillar 2** — Cognitive Companion: patients do a daily voice session; a scoring model produces a 0–100 cognitive state score tracked over time on the nurse dashboard.
 
 ## Running the project
