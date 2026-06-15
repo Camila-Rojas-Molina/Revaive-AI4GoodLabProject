@@ -242,7 +242,7 @@ export default function ActiveSessionPage() {
     : (isProcessing ? 'Just a moment…' : (currentQuestion || '…'))
 
   const statusText = isIdle
-    ? (phase === 'starting' ? '' : 'Tap to start')
+    ? ''
     : (isBotTalking ? 'Speaking…' : 'Listening…')
 
   const BG = 'linear-gradient(180deg, #0d3b36 0%, #124d47 100%)'
@@ -274,7 +274,7 @@ export default function ActiveSessionPage() {
           position: 'absolute', inset: 0,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          gap: 20, padding: '0 36px',
+          gap: 20, padding: '50px 36px 0',
           pointerEvents: 'none',
         }}>
 
@@ -370,8 +370,9 @@ export default function ActiveSessionPage() {
             aria-label={isIdle ? 'Go back' : 'End session'}
             style={{
               width: 44, height: 44, borderRadius: 12, cursor: 'pointer',
-              border: 'none', color: '#124d47',
-              background: '#fff', display: 'grid', placeItems: 'center',
+              border: '1px solid rgba(255,255,255,0.25)', color: '#fff',
+              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center',
             }}
           >
             <Icon name="x" size={20} />
@@ -380,7 +381,9 @@ export default function ActiveSessionPage() {
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 7,
             fontWeight: 600, fontSize: 15, padding: '7px 14px',
-            borderRadius: 999, background: '#fff', color: '#124d47',
+            borderRadius: 999, background: 'rgba(255,255,255,0.15)', color: '#fff',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.25)',
           }}>
             <Icon name="clock" size={16} />{mm}:{ss}
           </span>
