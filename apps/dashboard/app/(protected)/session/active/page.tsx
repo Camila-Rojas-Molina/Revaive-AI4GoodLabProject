@@ -265,104 +265,14 @@ export default function ActiveSessionPage() {
       `}</style>
 
       <div style={{
-        position: 'relative', minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+        position: 'relative', minHeight: '100dvh',
         background: BG, color: 'var(--on-primary)',
       }}>
 
-        {/* Title + mic + status — absolutely centered on the full viewport */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: 20, padding: '50px 36px 0',
-          pointerEvents: 'none',
-        }}>
-
-          {/* Title area */}
-          <div style={{ textAlign: 'center' }}>
-            <p style={{
-              margin: 0,
-              fontSize: isIdle ? 38 : 22,
-              fontWeight: isIdle ? 800 : 300,
-              lineHeight: isIdle ? 1.15 : 1.55,
-              letterSpacing: isIdle ? '-.02em' : '.01em',
-              maxWidth: isIdle ? 340 : 700,
-              fontFamily: isIdle ? 'var(--font-display)' : 'var(--font-ui)',
-              opacity: (!isIdle && !currentQuestion && !isProcessing) ? 0.45 : 1,
-            }}>
-              {titleText}
-            </p>
-            {phase === 'idle' && (
-              <p style={{
-                fontSize: 17, color: 'rgba(255,255,255,0.7)', margin: '14px 0 0',
-                whiteSpace: 'nowrap', lineHeight: 1.65, fontWeight: 500,
-              }}>
-                Tap the mic to begin. Revi will guide you.
-              </p>
-            )}
-          </div>
-
-          {/* Mic button + status text */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-            <button
-              onClick={isIdle ? startSession : undefined}
-              disabled={phase === 'starting'}
-              aria-label={isIdle ? 'Start session' : 'Microphone active'}
-              style={{
-                background: 'none', border: 'none', padding: 0,
-                cursor: phase === 'idle' ? 'pointer' : 'default',
-                opacity: phase === 'starting' ? .65 : 1,
-                transition: 'opacity .2s',
-                pointerEvents: 'auto',
-              }}
-            >
-              <div style={{ position: 'relative', width: 280, height: 280 }}>
-                {isSpeaking && (
-                  <>
-                    <div className="vad-ring" />
-                    <div className="vad-ring" />
-                    <div className="vad-ring" />
-                  </>
-                )}
-                <div style={{
-                  position: 'relative', zIndex: 1,
-                  width: 280, height: 280, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.12)',
-                  display: 'grid', placeItems: 'center',
-                  transition: 'background .25s',
-                }}>
-                  <div style={{
-                    width: 200, height: 200, borderRadius: '50%',
-                    background: isProcessing ? 'rgba(242,238,226,.6)' : '#f2eee2',
-                    display: 'grid', placeItems: 'center',
-                    transition: 'background .25s',
-                  }}>
-                    <div style={{ color: 'var(--primary)' }}>
-                      <Icon name="mic" size={72} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </button>
-
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', margin: 0, fontWeight: 500 }}>
-              {statusText}
-            </p>
-
-            {error && (
-              <div style={{
-                fontSize: 13, color: '#fff', background: 'rgba(220,50,50,.35)',
-                borderRadius: 10, padding: '10px 16px', maxWidth: 280, textAlign: 'center',
-              }}>
-                {error}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Header — renders above the absolute center layer */}
+        {/* Header — pinned to top */}
         <header style={{
-          padding: '20px 24px', display: 'flex', flexShrink: 0,
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+          padding: '20px 24px', display: 'flex',
           alignItems: 'center', justifyContent: 'space-between',
         }}>
           <button
@@ -389,12 +299,103 @@ export default function ActiveSessionPage() {
           </span>
         </header>
 
-        {/* Spacer — pushes bottom to bottom of flex column */}
-        <div style={{ flex: 1 }} />
+        {/* Title / question — upper portion, below header */}
+        <div style={{
+          position: 'absolute', top: 100, left: 0, right: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '0 36px', textAlign: 'center', pointerEvents: 'none',
+        }}>
+          <p style={{
+            margin: 0,
+            fontSize: isIdle ? 38 : 22,
+            fontWeight: isIdle ? 800 : 300,
+            lineHeight: isIdle ? 1.15 : 1.55,
+            letterSpacing: isIdle ? '-.02em' : '.01em',
+            maxWidth: isIdle ? 340 : 700,
+            fontFamily: isIdle ? 'var(--font-display)' : 'var(--font-ui)',
+            opacity: (!isIdle && !currentQuestion && !isProcessing) ? 0.45 : 1,
+          }}>
+            {titleText}
+          </p>
+          {phase === 'idle' && (
+            <p style={{
+              fontSize: 17, color: 'rgba(255,255,255,0.7)', margin: '14px 0 0',
+              whiteSpace: 'nowrap', lineHeight: 1.65, fontWeight: 500,
+            }}>
+              Tap the mic to begin. Revi will guide you.
+            </p>
+          )}
+        </div>
 
-        {/* Bottom — renders above the absolute center layer */}
-        <div style={{ padding: '0 24px 28px', flexShrink: 0 }}>
-          {!isIdle ? (
+        {/* Mic button — true center of viewport */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+        }}>
+          <button
+            onClick={isIdle ? startSession : undefined}
+            disabled={phase === 'starting'}
+            aria-label={isIdle ? 'Start session' : 'Microphone active'}
+            style={{
+              background: 'none', border: 'none', padding: 0,
+              cursor: phase === 'idle' ? 'pointer' : 'default',
+              opacity: phase === 'starting' ? .65 : 1,
+              transition: 'opacity .2s',
+            }}
+          >
+            <div style={{ position: 'relative', width: 280, height: 280 }}>
+              {isSpeaking && (
+                <>
+                  <div className="vad-ring" />
+                  <div className="vad-ring" />
+                  <div className="vad-ring" />
+                </>
+              )}
+              <div style={{
+                position: 'relative', zIndex: 1,
+                width: 280, height: 280, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.12)',
+                display: 'grid', placeItems: 'center',
+                transition: 'background .25s',
+              }}>
+                <div style={{
+                  width: 200, height: 200, borderRadius: '50%',
+                  background: isProcessing ? 'rgba(242,238,226,.6)' : '#f2eee2',
+                  display: 'grid', placeItems: 'center',
+                  transition: 'background .25s',
+                }}>
+                  <div style={{ color: 'var(--primary)' }}>
+                    <Icon name="mic" size={72} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {error && (
+            <div style={{
+              fontSize: 13, color: '#fff', background: 'rgba(220,50,50,.35)',
+              borderRadius: 10, padding: '10px 16px', maxWidth: 280, textAlign: 'center',
+              marginTop: 16,
+            }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom — Listening... + End Session, anchored above bottom edge */}
+        <div style={{
+          position: 'absolute', bottom: 48, left: 0, right: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 16, padding: '0 24px',
+        }}>
+          {statusText ? (
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', margin: 0, fontWeight: 500 }}>
+              {statusText}
+            </p>
+          ) : null}
+          {!isIdle && (
             <button
               onClick={handleEnd}
               disabled={phase === 'ending'}
@@ -405,7 +406,6 @@ export default function ActiveSessionPage() {
                 color: 'rgba(255,150,150,1)',
                 fontWeight: 600, fontSize: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
-                margin: '0 auto',
                 opacity: phase === 'ending' ? .5 : 1,
                 fontFamily: 'var(--font-ui)',
                 padding: '0 28px',
@@ -414,8 +414,6 @@ export default function ActiveSessionPage() {
               <Icon name="stop" size={17} />
               {phase === 'ending' ? 'Saving session…' : 'End Session'}
             </button>
-          ) : (
-            <div style={{ height: 54 }} />
           )}
         </div>
       </div>

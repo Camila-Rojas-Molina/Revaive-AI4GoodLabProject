@@ -218,6 +218,7 @@ async def end_voice_session(
         "component_scores": component_scores,
         "theme":            theme,
         "difficulty":       difficulty,
+        "session_date":     datetime.now().date().isoformat(),
     }).execute()
 
     session_row = session_result.data[0]

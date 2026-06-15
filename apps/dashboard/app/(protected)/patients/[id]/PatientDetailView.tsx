@@ -195,17 +195,14 @@ export default function PatientDetailView({ patient, trend }: {
   const ini = initials(patient.name)
   const firstName = patient.name.split(' ')[0]
   const sessionCount = sessions.length
-  const lastScore = [...sessions]
-    .sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())
-    .find(s => s.cognitive_score != null && s.cognitive_score > 0)
-    ?.cognitive_score ?? null
+  const lastScore = sessions.find(s => s.cognitive_score != null && s.cognitive_score > 0)?.cognitive_score ?? null
   const trendDir = getTrendDir(sessions)
 
   // Build chart data from sessions (desc order → reverse to oldest-first, take last 7 with scores).
   const sessionChartData = [...sessions]
     .reverse()
+    .filter(s => s.cognitive_score != null && s.cognitive_score > 0)
     .slice(-7)
-    .filter(s => s.cognitive_score != null)
     .map(s => ({ label: s.session_date.slice(5), v: s.cognitive_score as number }))
 
   // The trend prop comes from a separate API endpoint and may use {date,score} or {label,v} shape.
@@ -438,9 +435,7 @@ export default function PatientDetailView({ patient, trend }: {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text)' }}>
-                      {new Date(session.session_date).toLocaleDateString('en-US', {
-                        weekday: 'short', month: 'short', day: 'numeric',
-                      })}
+                      {(() => { const [y,m,d] = session.session_date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) })()}
                     </div>
                     {session.theme && (
                       <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2, textTransform: 'capitalize' }}>

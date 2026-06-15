@@ -101,7 +101,7 @@ async def list_sessions(patient_id: str, _user=Depends(get_current_user)):
         db.table("sessions")
         .select("*, session_features(*)")
         .eq("patient_id", patient_id)
-        .order("session_date", desc=True)
+        .order("created_at", desc=True)
         .execute()
     )
     return result.data
