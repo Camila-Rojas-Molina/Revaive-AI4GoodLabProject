@@ -249,7 +249,7 @@ export default function PatientDetailView({ patient, trend }: {
   const details = [
     ['Age', patient.age ? `${patient.age} years` : '—'],
     ['Gender', patient.sex ?? '—'],
-    ['Surgical category', patient.surgery_type ?? '—'],
+    ['Service administered', patient.surgery_type ?? '—'],
   ]
 
   return (

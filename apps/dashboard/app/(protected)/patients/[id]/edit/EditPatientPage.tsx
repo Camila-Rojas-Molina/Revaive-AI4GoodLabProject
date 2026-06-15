@@ -22,7 +22,30 @@ type RiskResult = { level: 'Low' | 'High'; tone: 'good' | 'danger'; confidence?:
 
 const GENDER = ['Female', 'Male', 'Non-binary / Prefer not to say']
 const ADMISSION = ['Elective', 'Emergency', 'Urgent', 'Direct emergency', 'Same-day surgery']
-const SURGICAL = ['Neurosurgery', 'Other / Not listed']
+const SURGICAL = [
+  'CMED – Cardiac Medical',
+  'CSURG – Cardiac Surgery',
+  'DENT – Dental',
+  'ENT – Ear, Nose & Throat',
+  'EYE – Eye / Ophthalmology',
+  'GU – Genitourinary',
+  'GYN – Gynecological',
+  'MED – General Medicine',
+  'NB – Newborn',
+  'NBB – Newborn Baby',
+  'NMED – Neurologic Medical',
+  'NSURG – Neurologic Surgery',
+  'OBS – Obstetrics',
+  'OMED – Oncologic Medical',
+  'ORTHO – Orthopaedic',
+  'PSURG – Plastic Surgery',
+  'PSYCH – Psychiatric',
+  'SURG – General Surgery',
+  'TRAUM – Trauma',
+  'TSURG – Thoracic Surgery',
+  'VSURG – Vascular Surgery',
+  'Unknown / Other',
+]
 const YNU = ['Yes', 'No', 'Unknown']
 
 const COPY: Record<string, string> = {
@@ -59,7 +82,7 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
     if (!f.admission) e.admission = 'Select an admission type'
     if (!f.priorDelirium) e.priorDelirium = 'Required'
     if (!f.dementia) e.dementia = 'Required'
-    if (!f.surgical) e.surgical = 'Select a surgical category'
+    if (!f.surgical) e.surgical = 'Select a service'
     setErrs(e)
     return Object.keys(e).length === 0
   }
@@ -214,8 +237,8 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
         <Field label="Admission type" required error={errs.admission}>
           <CBSelect value={f.admission} onChange={v => set('admission', v)} options={ADMISSION} placeholder="Select admission type" error={errs.admission} />
         </Field>
-        <Field label="Surgical category" required hint="Primary procedure category" error={errs.surgical}>
-          <CBSelect value={f.surgical} onChange={v => set('surgical', v)} options={SURGICAL} placeholder="Select surgical category" error={errs.surgical} />
+        <Field label="Service administered" required hint="Clinical service area" error={errs.surgical}>
+          <CBSelect value={f.surgical} onChange={v => set('surgical', v)} options={SURGICAL} placeholder="Select service" error={errs.surgical} />
         </Field>
       </FormGroup>
 

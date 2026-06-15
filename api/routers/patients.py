@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from supabase import create_client
 from api.middleware.auth import get_current_user
-from api.routers.risk import model
+from api.routers.risk import _predict_with_routing
 import pandas as pd
 
 # Maps from UI form labels → numeric values the LabelEncoder assigned during training
@@ -20,10 +20,6 @@ _ADMISSION = {
     "Emergency":         2,  # EW EMER.
     "Same-day surgery":  3,  # SURGICAL SAME DAY ADMISSION
     "Urgent":            4,  # URGENT
-}
-_SURGICAL = {
-    "Neurosurgery":      0,  # Neurosurgery
-    "Other / Not listed": 1,  # Other
 }
 
 router = APIRouter()
@@ -45,18 +41,15 @@ class PatientCreate(BaseModel):
 
 @router.post("")
 async def create_patient(patient: PatientCreate, user=Depends(get_current_user)):
-    # Run real model prediction — encode UI labels to the numeric values from training
-    features = pd.DataFrame([{
-        "anchor_age": patient.anchor_age or 0,
-        "gender": _GENDER.get(patient.gender or "", 0),
-        "admission_type": _ADMISSION.get(patient.admission_type or "", 1),
-        "prior_delirium": patient.prior_delirium,
-        "dementia": patient.dementia,
-        "surgical_category": _SURGICAL.get(patient.surgical_category or "", 1),
-    }])
-    prediction = model.predict(features)[0]
-    proba = model.predict_proba(features)[0]
-    label = {0: "low", 1: "high"}[int(prediction)]
+    prediction, proba = _predict_with_routing(
+        anchor_age     = patient.anchor_age or 0,
+        gender_enc     = _GENDER.get(patient.gender or "", 0),
+        admission_enc  = _ADMISSION.get(patient.admission_type or "", 1),
+        prior_delirium = patient.prior_delirium,
+        dementia       = patient.dementia,
+        service_label  = patient.surgical_category or "Unknown / Other",
+    )
+    label = {0: "low", 1: "high"}[prediction]
     confidence = round(float(max(proba)), 3)
 
     db = _db()
@@ -160,17 +153,15 @@ async def update_patient(patient_id: str, data: PatientUpdate, user=Depends(get_
         "surgical_category": data.surgical_category,
     }
     if all(v is not None for v in model_fields.values()):
-        features = pd.DataFrame([{
-            "anchor_age": model_fields["anchor_age"],
-            "gender": _GENDER.get(model_fields["gender"] or "", 0),
-            "admission_type": _ADMISSION.get(model_fields["admission_type"] or "", 1),
-            "prior_delirium": model_fields["prior_delirium"],
-            "dementia": model_fields["dementia"],
-            "surgical_category": _SURGICAL.get(model_fields["surgical_category"] or "", 1),
-        }])
-        prediction = model.predict(features)[0]
-        proba = model.predict_proba(features)[0]
-        updates["pod_risk_label"] = {0: "low", 1: "high"}[int(prediction)]
+        prediction, proba = _predict_with_routing(
+            anchor_age     = model_fields["anchor_age"],
+            gender_enc     = _GENDER.get(model_fields["gender"] or "", 0),
+            admission_enc  = _ADMISSION.get(model_fields["admission_type"] or "", 1),
+            prior_delirium = model_fields["prior_delirium"],
+            dementia       = model_fields["dementia"],
+            service_label  = model_fields["surgical_category"] or "Unknown / Other",
+        )
+        updates["pod_risk_label"] = {0: "low", 1: "high"}[prediction]
         updates["pod_risk_score"] = round(float(max(proba)), 3)
 
     if not updates:
