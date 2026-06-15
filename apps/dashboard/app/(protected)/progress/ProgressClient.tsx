@@ -23,6 +23,7 @@ export default function ProgressClient({ trend, avg }: {
 
   return (
     <Screen
+      bg="#f2eee2"
       topBar={<TopBar title="My Progress" sub="Cognitive recovery trend" />}
       bottomNav={<BottomNav items={PATIENT_NAV} />}>
 
@@ -42,11 +43,11 @@ export default function ProgressClient({ trend, avg }: {
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           {[['week', 'Week'], ['month', 'Month'], ['all', 'All time']].map(([id, l]) => (
             <button key={id} onClick={() => setRange(id)}
-              style={{ flex: 1, minHeight: 44, borderRadius: 12, cursor: 'pointer',
-                fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 15,
-                border: `1px solid ${range === id ? 'var(--primary)' : 'var(--line)'}`,
-                background: range === id ? 'var(--primary-soft)' : 'var(--surface)',
-                color: range === id ? 'var(--primary)' : 'var(--text-muted)' }}>{l}</button>
+              style={{ flex: 1, minHeight: 40, borderRadius: 999, cursor: 'pointer',
+                fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 14,
+                border: range === id ? 'none' : '1px solid var(--line)',
+                background: range === id ? '#124d47' : 'var(--surface)',
+                color: range === id ? '#fff' : 'var(--text-muted)' }}>{l}</button>
           ))}
         </div>
       </Card>

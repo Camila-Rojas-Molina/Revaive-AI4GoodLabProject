@@ -18,6 +18,7 @@ const toneVar = (t: string) =>
 export default function AlertsPage() {
   return (
     <Screen
+      bg="#f2eee2"
       topBar={<TopBar title="Alerts" sub="Ward 4B" />}
       bottomNav={<BottomNav items={NURSE_NAV} />}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

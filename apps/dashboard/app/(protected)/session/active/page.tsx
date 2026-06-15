@@ -242,10 +242,10 @@ export default function ActiveSessionPage() {
     : (isProcessing ? 'Just a moment…' : (currentQuestion || '…'))
 
   const statusText = isIdle
-    ? (phase === 'starting' ? 'Connecting…' : 'Tap to start')
-    : (isBotTalking ? 'Speaking…' : 'Listening… take your time.')
+    ? ''
+    : (isBotTalking ? 'Speaking…' : 'Listening…')
 
-  const BG = 'linear-gradient(160deg, var(--primary-2) 0%, var(--primary) 100%)'
+  const BG = 'linear-gradient(180deg, #0d3b36 0%, #124d47 100%)'
 
   return (
     <>
@@ -274,7 +274,7 @@ export default function ActiveSessionPage() {
           position: 'absolute', inset: 0,
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          gap: 20, padding: '0 36px',
+          gap: 20, padding: '50px 36px 0',
           pointerEvents: 'none',
         }}>
 
@@ -282,21 +282,22 @@ export default function ActiveSessionPage() {
           <div style={{ textAlign: 'center' }}>
             <p style={{
               margin: 0,
-              fontSize: isIdle ? 28 : 22,
-              fontWeight: 300,
-              lineHeight: isIdle ? 1.3 : 1.55,
-              letterSpacing: '.01em',
+              fontSize: isIdle ? 38 : 22,
+              fontWeight: isIdle ? 800 : 300,
+              lineHeight: isIdle ? 1.15 : 1.55,
+              letterSpacing: isIdle ? '-.02em' : '.01em',
               maxWidth: isIdle ? 340 : 700,
+              fontFamily: isIdle ? 'var(--font-display)' : 'var(--font-ui)',
               opacity: (!isIdle && !currentQuestion && !isProcessing) ? 0.45 : 1,
             }}>
               {titleText}
             </p>
             {phase === 'idle' && (
               <p style={{
-                fontSize: 15, opacity: .65, margin: '12px 0 0',
-                whiteSpace: 'nowrap', lineHeight: 1.65,
+                fontSize: 17, color: 'rgba(255,255,255,0.7)', margin: '14px 0 0',
+                whiteSpace: 'nowrap', lineHeight: 1.65, fontWeight: 500,
               }}>
-                Tap the mic to begin — Revi will guide you.
+                Tap the mic to begin. Revi will guide you.
               </p>
             )}
           </div>
@@ -326,13 +327,13 @@ export default function ActiveSessionPage() {
                 <div style={{
                   position: 'relative', zIndex: 1,
                   width: 280, height: 280, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.12)',
                   display: 'grid', placeItems: 'center',
                   transition: 'background .25s',
                 }}>
                   <div style={{
                     width: 200, height: 200, borderRadius: '50%',
-                    background: isProcessing ? 'rgba(245,240,232,.6)' : '#f5f0e8',
+                    background: isProcessing ? 'rgba(242,238,226,.6)' : '#f2eee2',
                     display: 'grid', placeItems: 'center',
                     transition: 'background .25s',
                   }}>
@@ -344,7 +345,7 @@ export default function ActiveSessionPage() {
               </div>
             </button>
 
-            <p style={{ fontSize: 14, opacity: .65, margin: 0, fontWeight: 500 }}>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', margin: 0, fontWeight: 500 }}>
               {statusText}
             </p>
 
@@ -369,8 +370,9 @@ export default function ActiveSessionPage() {
             aria-label={isIdle ? 'Go back' : 'End session'}
             style={{
               width: 44, height: 44, borderRadius: 12, cursor: 'pointer',
-              border: '1px solid rgba(255,255,255,.22)', color: 'inherit',
-              background: 'rgba(255,255,255,.08)', display: 'grid', placeItems: 'center',
+              border: '1px solid rgba(255,255,255,0.25)', color: '#fff',
+              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)', display: 'grid', placeItems: 'center',
             }}
           >
             <Icon name="x" size={20} />
@@ -379,7 +381,9 @@ export default function ActiveSessionPage() {
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 7,
             fontWeight: 600, fontSize: 15, padding: '7px 14px',
-            borderRadius: 999, background: 'rgba(255,255,255,.11)',
+            borderRadius: 999, background: 'rgba(255,255,255,0.15)', color: '#fff',
+            backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.25)',
           }}>
             <Icon name="clock" size={16} />{mm}:{ss}
           </span>
@@ -395,14 +399,16 @@ export default function ActiveSessionPage() {
               onClick={handleEnd}
               disabled={phase === 'ending'}
               style={{
-                width: '100%', height: 54, borderRadius: 999, cursor: 'pointer',
+                width: 'fit-content', minWidth: 200, height: 54, borderRadius: 999, cursor: 'pointer',
                 border: '1.5px solid rgba(255,100,100,.5)',
                 background: 'rgba(255,80,80,.1)',
                 color: 'rgba(255,150,150,1)',
                 fontWeight: 600, fontSize: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+                margin: '0 auto',
                 opacity: phase === 'ending' ? .5 : 1,
                 fontFamily: 'var(--font-ui)',
+                padding: '0 28px',
               }}
             >
               <Icon name="stop" size={17} />

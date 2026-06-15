@@ -195,7 +195,10 @@ export default function PatientDetailView({ patient, trend }: {
   const ini = initials(patient.name)
   const firstName = patient.name.split(' ')[0]
   const sessionCount = sessions.length
-  const lastScore = sessions.find(s => s.cognitive_score != null && s.cognitive_score > 0)?.cognitive_score ?? null
+  const lastScore = [...sessions]
+    .sort((a, b) => new Date(b.session_date).getTime() - new Date(a.session_date).getTime())
+    .find(s => s.cognitive_score != null && s.cognitive_score > 0)
+    ?.cognitive_score ?? null
   const trendDir = getTrendDir(sessions)
 
   // Build chart data from sessions (desc order → reverse to oldest-first, take last 7 with scores).
@@ -254,6 +257,7 @@ export default function PatientDetailView({ patient, trend }: {
 
   return (
     <Screen
+      bg="#f2eee2"
       topBar={
         <TopBar title={patient.name}
           left={<IconButton name="chevLeft" label="Back" onClick={() => router.push('/dashboard')} />}
@@ -326,7 +330,7 @@ export default function PatientDetailView({ patient, trend }: {
       <Card style={{ display: 'flex', marginBottom: 18, textAlign: 'center' }}>
         {[
           ['Sessions', sessionCount],
-          ['Cognitive score', lastScore != null ? lastScore : '—'],
+          ['Latest score', lastScore != null ? lastScore : '—'],
           ['Avg session duration', (() => {
             const scored = sessions.filter(s => s.duration_seconds != null)
             if (scored.length === 0) return '—'

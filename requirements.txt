@@ -9,6 +9,12 @@ numpy
 requests
 python-jose[cryptography]
 httpx
+librosa
+spacy
 openai
+sounddevice
+soundfile
 elevenlabs
 nltk
+sentence-transformers
+
