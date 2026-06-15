@@ -24,7 +24,7 @@ const CST_DOMAINS: { key: string; label: string }[] = [
 const FACTORS = [
   { key: 'latency',          label: 'Response speed'  },
   { key: 'type_token_ratio', label: 'Recall accuracy' },
-  { key: 'coherence',        label: 'Orientation'     },
+  { key: 'coherence',        label: 'Topic coherence' },
 ] as const
 
 type ComponentScores = {

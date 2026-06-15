@@ -232,7 +232,7 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
         background: 'var(--surface-2)', borderRadius: 'var(--r-md)', marginBottom: 8 }}>
         <span style={{ color: 'var(--text-muted)', flexShrink: 0, marginTop: 1 }}><Icon name="info" size={22} /></span>
         <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          These factors feed a delirium-risk estimate. It supports — but does not replace — clinical judgement.
+          These factors support the delirium risk estimate and are intended to assist clinical judgement, not replace it.
         </p>
       </div>
     </Screen>

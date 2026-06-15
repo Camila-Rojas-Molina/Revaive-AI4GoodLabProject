@@ -56,13 +56,13 @@ def _tts_base64(text: str) -> str:
 async def start_voice_session(patient_id: str = Form(...)):
     """Generate the bot's opening message to kick off the session."""
     db = _db()
-    result = db.table("patients").select("name, age, sex, surgery_type").eq("id", patient_id).limit(1).execute()
+    result = db.table("patients").select("name, age, sex, surgery_type, selected_domains").eq("id", patient_id).limit(1).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Patient not found")
     patient_profile = result.data[0]
 
     opening_text = get_response(
-        "[The session is starting. Greet the patient warmly by name and ask your first question.]",
+        "[The session is starting. Introduce yourself as Revi, greet the patient warmly by name, and move into your first CST exercise.]",
         [],
         patient_profile,
     )
@@ -81,10 +81,11 @@ async def voice_turn(
 ):
     """Process one patient turn: transcribe → respond → return audio."""
     db = _db()
-    result = db.table("patients").select("name, age, sex, surgery_type").eq("id", patient_id).limit(1).execute()
+    result = db.table("patients").select("name, age, sex, surgery_type, selected_domains").eq("id", patient_id).limit(1).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Patient not found")
     patient_profile = result.data[0]
+    print(f"DEBUG voice.py patient_profile: {patient_profile}")
 
     history = json.loads(conversation_history)
 
@@ -171,6 +172,9 @@ async def end_voice_session(
     session_id = f"{patient_id}_{int(time.time())}"
     db = _db()
 
+    domains_result = db.table("patients").select("selected_domains").eq("id", patient_id).single().execute()
+    selected_domains = domains_result.data.get("selected_domains") if domains_result.data else []
+    
     # Fetch previous score for baseline comparison
     baseline_cri = None
     try:
@@ -203,7 +207,7 @@ async def end_voice_session(
         print(f"[voice/end] scoring failed: {e}")
 
     score_for_cst = cognitive_score if cognitive_score is not None else 50.0
-    theme, difficulty, _ = get_prompts(score_for_cst)
+    theme, difficulty, _ = get_prompts(score_for_cst, selected_domains=selected_domains)    
 
     session_result = db.table("sessions").insert({
         "patient_id":       patient_id,

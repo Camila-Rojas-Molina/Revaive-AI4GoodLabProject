@@ -4,22 +4,24 @@
       "description": "Grounding patient in time, place, and identity",
       "cst_basis": "Reality Orientation Therapy - evidence-based for post-surgical cognitive recovery",
       "low": [
-        "What day does it feel like today?",
-        "Do you know which hospital you're staying at right now?",
-        "What did you have for breakfast this morning?",
+        "How are you feeling today?",
+        "Have you had a chance to rest today?",
+        "Is there anything that's been on your mind?",
         "Has anyone come to visit you recently?",
-        "What season does it feel like outside right now?"
+        "What's been the nicest part of your day so far?"
       ],
       "medium": [
-        "How long have you been in the hospital so far?",
-        "What's the first thing you're looking forward to when you get home?",
-        "Can you tell me a little about the neighbourhood you live in?",
-        "What does a typical morning look like for you at home?"
+        "How are you feeling today?",
+        "How has your day been so far?",
+        "Is there anything on your mind today?",
+        "What's been the best part of your day so far?",
+        "How have you been sleeping?"
       ],
       "high": [
-        "What's been happening in the news lately that you remember?",
-        "How has the city changed since you were younger?",
-        "What are some things you're planning to do once you've recovered?"
+        "How are you feeling today — anything particular on your mind?",
+        "How has your energy been lately?",
+        "What are you most looking forward to once you've recovered?",
+        "How have the days been feeling for you recently?"
       ]
     },
     "reminiscence": {
