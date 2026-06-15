@@ -290,9 +290,9 @@ export default function PatientDetailView({ patient, trend }: {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 7, flexWrap: 'wrap' }}>
             <span style={{
-              fontSize: 12, fontFamily: 'monospace', fontWeight: 600,
-              background: 'var(--surface-2)', color: 'var(--text-faint)',
-              borderRadius: 4, padding: '2px 7px', letterSpacing: '.04em', userSelect: 'all',
+              fontSize: 12, fontFamily: 'monospace', fontWeight: 700,
+              background: 'var(--surface-2)', color: 'var(--text-muted)',
+              borderRadius: 4, padding: '2px 7px', letterSpacing: '.1em', userSelect: 'all',
             }}>
               ID: {patient.id.slice(0, 8)}
             </span>
@@ -446,7 +446,7 @@ export default function PatientDetailView({ patient, trend }: {
 
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>
-                      {session.cognitive_score != null ? Math.round(session.cognitive_score) : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-faint)' }}>Pending</span>}
+                      {session.cognitive_score != null ? session.cognitive_score.toFixed(1) : <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-faint)' }}>Pending</span>}
                     </div>
                     {scoreDelta != null && (
                       <div style={{
