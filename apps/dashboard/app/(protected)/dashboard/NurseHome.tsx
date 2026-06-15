@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getPatientPins } from './actions'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import {
-  Screen, TopBar, IconButton, Button,
+  Screen, IconButton, Button,
   SearchBar, EmptyState, KebabMenu, ConfirmDialog,
-  Icon, initials,
+  Icon,
 } from '@/components/ui'
 
 const NURSE_NAV = [
@@ -87,11 +88,17 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
 
   return (
     <Screen
-      bg="linear-gradient(170deg, #F5F0E3 0%, #EAE4D2 100%)"
+      bg="#f2eee2"
       topBar={
-        <TopBar brand right={
+        <header style={{
+          position: 'sticky', top: 0, zIndex: 20, minHeight: 86,
+          padding: '14px var(--pad)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+          background: 'var(--surface)', borderBottom: '1px solid var(--line)',
+        }}>
+          <img src="/big_logo.png" alt="Revaive" style={{ height: 60, width: 'auto', display: 'block' }} />
           <IconButton name="bell" label="Alerts" badge onClick={() => router.push('/alerts')} />
-        } />
+        </header>
       }
       bottomNav={
         <nav style={{
@@ -110,14 +117,15 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                   alignItems: 'center', gap: 5, padding: '8px 4px',
                 }}>
                 <span style={{
-                  display: 'grid', placeItems: 'center', width: 64, height: 36,
-                  borderRadius: 20, background: active ? '#124d47' : 'transparent',
+                  display: 'grid', placeItems: 'center', width: 64, height: 36, borderRadius: 20,
+                  background: active ? '#124d47' : 'transparent',
                   color: active ? '#fff' : 'var(--text-faint)',
+                  transition: 'background .15s, color .15s',
                 }}>
                   <Icon name={it.icon} size={25} stroke={active ? 2.4 : 2} />
                 </span>
                 <span style={{
-                  fontSize: 13, fontWeight: active ? 700 : 600,
+                  fontSize: 13, fontWeight: active ? 700 : 500,
                   color: active ? '#124d47' : 'var(--text-faint)',
                 }}>
                   {it.label}
@@ -139,16 +147,16 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
         onCancel={() => setDeleteTarget(null)}
       />
 
-      {/* Header */}
-      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 18, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
           <h1 style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 42,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30,
             color: '#124d47', margin: '0 0 5px', letterSpacing: '-.02em', lineHeight: 1.05,
           }}>
             Your patients
           </h1>
-          <p style={{ fontSize: 14.5, color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 14.5, color: 'rgba(18,77,71,0.6)', margin: 0, fontWeight: 500 }}>
             {patients.length} active assessment{patients.length === 1 ? '' : 's'}
           </p>
         </div>
@@ -169,29 +177,35 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: 14 }}>
+      <div id="nurse-search-compact" style={{ marginBottom: 8 }}>
+        <style>{`
+          #nurse-search-compact input {
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+            font-size: 14px !important;
+          }
+        `}</style>
         <SearchBar value={q} onChange={setQ} placeholder="Search by name or procedure" />
       </div>
 
       {/* Filter pills */}
-      <div style={{ marginBottom: 24, display: 'flex', gap: 8 }}>
+      <div style={{ marginBottom: 18, display: 'flex', gap: 6 }}>
         {filterOptions.map(o => {
           const active = filter === o.label
-          const bg = active
-            ? o.label === 'Low' ? '#D97706'
-              : o.label === 'High' ? '#BE123C'
-              : '#124d47'
-            : 'rgba(255,255,255,.7)'
+          const activeBg = o.label === 'Low' ? '#D97706'
+            : o.label === 'High' ? '#BE123C'
+            : '#124d47'
           return (
             <button
               key={o.label}
               onClick={() => setFilter(o.label)}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '9px 18px', borderRadius: 999,
-                background: bg, color: active ? '#fff' : 'var(--text-muted)',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 999,
+                background: active ? activeBg : 'rgba(255,255,255,.7)',
+                color: active ? '#fff' : 'var(--text-muted)',
                 border: active ? 'none' : '1.5px solid var(--line-strong)',
-                fontSize: 14.5, fontWeight: active ? 700 : 600, cursor: 'pointer',
+                fontSize: 13, fontWeight: active ? 700 : 600, cursor: 'pointer',
                 fontFamily: 'var(--font-ui)',
                 boxShadow: active ? '0 3px 10px -4px rgba(0,0,0,.28)' : 'none',
                 transition: 'all .15s',
@@ -200,7 +214,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
               {o.label}
               <span style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                minWidth: 22, height: 22, borderRadius: 11, fontSize: 12.5, fontWeight: 800, padding: '0 5px',
+                minWidth: 19, height: 19, borderRadius: 10, fontSize: 11, fontWeight: 800, padding: '0 4px',
                 background: active ? 'rgba(255,255,255,.25)' : 'var(--surface-2)',
                 color: active ? '#fff' : 'var(--text-muted)',
               }}>
@@ -225,77 +239,109 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {sorted.map(p => {
-            const ini = initials(p.name)
             const hasFlag = p.sessions?.some(s => s.flag_escalate)
             const latestScore = p.sessions
               ?.slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               ?.[0]?.cognitive_score
-            const riskBg = p.pod_risk_label === 'high' ? 'rgba(190,18,60,.85)'
-              : p.pod_risk_label === 'low' ? 'rgba(22,163,74,.8)'
-              : 'rgba(217,119,6,.85)'
+            const scoredSessions = [...(p.sessions ?? [])]
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .filter(s => s.cognitive_score != null && s.cognitive_score > 0)
+            const trend = scoredSessions.length >= 2
+              ? scoredSessions[0].cognitive_score! > scoredSessions[1].cognitive_score! ? 'up'
+              : scoredSessions[0].cognitive_score! < scoredSessions[1].cognitive_score! ? 'down'
+              : null
+              : null
+            const riskStyle = p.pod_risk_label === 'high'
+              ? { bg: '#fde8e8', color: '#9b1c1c', label: 'high risk' }
+              : p.pod_risk_label === 'low'
+              ? { bg: '#d4e8e4', color: '#124d47', label: 'low risk' }
+              : { bg: '#fef3c7', color: '#92400e', label: 'moderate risk' }
             return (
               <div
                 key={p.id}
                 onClick={() => router.push(`/patients/${p.id}`)}
                 style={{
                   display: 'flex', alignItems: 'center', cursor: 'pointer',
-                  background: '#124d47', borderRadius: 22, overflow: 'hidden',
-                  border: hasFlag ? '1.5px solid rgba(220,50,50,.6)' : '1.5px solid rgba(255,255,255,.06)',
-                  boxShadow: '0 8px 28px -10px rgba(18,77,71,.5), inset 0 1px 0 rgba(255,255,255,.08)',
+                  background: 'rgba(255,255,255,0.45)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  borderRadius: 22, overflow: 'hidden',
+                  border: '1px solid rgba(255,255,255,0.6)',
+                  boxShadow: '0 4px 20px -8px rgba(18,77,71,.2)',
                   transition: 'transform .12s, box-shadow .15s',
                 }}
                 onMouseEnter={e => {
                   const el = e.currentTarget as HTMLElement
                   el.style.transform = 'translateY(-2px)'
-                  el.style.boxShadow = '0 14px 36px -10px rgba(18,77,71,.6), inset 0 1px 0 rgba(255,255,255,.12)'
+                  el.style.boxShadow = '0 8px 28px -8px rgba(18,77,71,.3)'
                 }}
                 onMouseLeave={e => {
                   const el = e.currentTarget as HTMLElement
                   el.style.transform = 'none'
-                  el.style.boxShadow = '0 8px 28px -10px rgba(18,77,71,.5), inset 0 1px 0 rgba(255,255,255,.08)'
+                  el.style.boxShadow = '0 4px 20px -8px rgba(18,77,71,.2)'
                 }}
               >
                 {/* Score column */}
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  padding: '20px 20px 20px 24px',
-                  borderRight: '1px solid rgba(255,255,255,.1)',
-                  minWidth: 80, flexShrink: 0,
+                  padding: '16px 14px 16px 18px',
+                  borderRight: '1px solid rgba(18,77,71,0.15)',
+                  minWidth: 68, flexShrink: 0,
                 }}>
                   <span style={{
-                    fontSize: 44, fontWeight: 800, color: '#fff', lineHeight: 1,
+                    fontSize: 32, fontWeight: 800, color: '#124d47', lineHeight: 1,
                     fontFamily: 'var(--font-display)', letterSpacing: '-.02em',
                   }}>
                     {latestScore != null ? latestScore : '—'}
                   </span>
                   <span style={{
-                    fontSize: 10, color: 'rgba(255,255,255,.45)', marginTop: 4,
+                    fontSize: 10, color: 'rgba(18,77,71,0.5)', marginTop: 4,
                     fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
                   }}>
                     SCORE
                   </span>
+                  {trend === 'up' && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 6,
+                      fontSize: 10, fontWeight: 700, color: 'var(--good)',
+                      background: 'var(--good-soft)', borderRadius: 999, padding: '3px 8px',
+                    }}>
+                      <TrendingUp size={10} strokeWidth={2.5} />
+                      Improving
+                    </span>
+                  )}
+                  {trend === 'down' && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 6,
+                      fontSize: 10, fontWeight: 700, color: 'var(--danger)',
+                      background: 'var(--danger-soft)', borderRadius: 999, padding: '3px 8px',
+                    }}>
+                      <TrendingDown size={10} strokeWidth={2.5} />
+                      Declining
+                    </span>
+                  )}
                 </div>
 
                 {/* Name + meta */}
                 <div style={{ flex: 1, minWidth: 0, padding: '18px 16px 18px 20px' }}>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: '#fff', marginBottom: 3, lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: '#124d47', marginBottom: 3, lineHeight: 1.2 }}>
                     {p.name}
                   </div>
-                  <div style={{ fontSize: 13.5, color: 'rgba(255,255,255,.6)', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 13.5, color: 'rgba(18,77,71,0.65)', lineHeight: 1.3 }}>
                     {[p.surgery_type ?? 'No procedure', p.age ? `${p.age} yrs` : null].filter(Boolean).join(' · ')}
                   </div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                     <span style={{
-                      fontSize: 10.5, color: 'rgba(255,255,255,.4)', fontFamily: 'monospace',
-                      background: 'rgba(255,255,255,.07)', borderRadius: 4,
-                      padding: '2px 7px', letterSpacing: '.04em', userSelect: 'all',
+                      fontSize: 10.5, fontWeight: 700, color: '#124d47',
+                      fontFamily: 'monospace', background: 'rgba(18,77,71,0.12)',
+                      borderRadius: 4, padding: '2px 7px', letterSpacing: '.08em', userSelect: 'all',
                     }}>
                       {p.id.slice(0, 8)}
                     </span>
                     {p.profile_id && pinMap[p.profile_id] && (
                       <span style={{
-                        fontSize: 10.5, fontWeight: 700, color: 'rgba(255,255,255,.85)',
-                        fontFamily: 'monospace', background: 'rgba(255,255,255,.15)',
+                        fontSize: 10.5, fontWeight: 700, color: '#124d47',
+                        fontFamily: 'monospace', background: 'rgba(18,77,71,0.12)',
                         borderRadius: 4, padding: '2px 7px', letterSpacing: '.08em',
                       }}>
                         PIN {pinMap[p.profile_id]}
@@ -310,17 +356,11 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                     display: 'inline-flex', alignItems: 'center',
                     padding: '6px 14px', borderRadius: 999,
                     fontSize: 12.5, fontWeight: 700,
-                    background: riskBg, color: '#fff',
+                    background: riskStyle.bg, color: riskStyle.color,
                   }}>
-                    {p.pod_risk_label === 'medium' ? 'Moderate' : p.pod_risk_label.charAt(0).toUpperCase() + p.pod_risk_label.slice(1)}
+                    {riskStyle.label}
                   </span>
-                  <div style={{
-                    '--surface': 'rgba(255,255,255,.12)',
-                    '--text-muted': 'rgba(255,255,255,.7)',
-                    '--primary-soft': 'rgba(255,255,255,.22)',
-                    '--primary': '#fff',
-                    '--line': 'rgba(255,255,255,.15)',
-                  } as React.CSSProperties}>
+                  <div>
                     <KebabMenu items={[
                       { label: 'Edit patient', icon: 'edit', onClick: () => router.push(`/patients/${p.id}/edit`) },
                       { label: 'Delete patient', icon: 'trash', danger: true, onClick: () => setDeleteTarget(p) },

@@ -43,6 +43,7 @@ export default function NurseProfilePage() {
 
   return (
     <Screen
+      bg="#f2eee2"
       topBar={<TopBar title="Profile" />}
       bottomNav={<BottomNav items={NURSE_NAV} />}>
 

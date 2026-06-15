@@ -17,6 +17,7 @@ const NOTIFS = [
 export default function NotificationsPage() {
   return (
     <Screen
+      bg="#f2eee2"
       topBar={
         <TopBar title="Notifications"
           left={
