@@ -10,6 +10,25 @@ Revaive — an AI prototype that detects postoperative delirium (POD) risk and p
 
 **Tech stack:** FastAPI (backend), Next.js / React (frontend), Supabase (DB/auth), Whisper/OpenAI + ElevenLabs (voice + LLM), Python tooling for models.
 
+**Tech stack:**
+
+*Machine Learning & Data Processing (Python)*
+- **scikit-learn** — Random Forest classifier for POD risk prediction
+- **sentence-transformers, spaCy, NLTK** — NLP pipeline for cognitive scoring
+- **pandas, NumPy** — data wrangling and feature engineering
+- **Matplotlib, seaborn** — exploratory data analysis and visualisation
+
+*Backend*
+- **FastAPI + Uvicorn** — REST API and voice session endpoints
+- **OpenAI** (Whisper + GPT-4o) — speech-to-text and conversational AI
+- **ElevenLabs** — text-to-speech for patient sessions
+- **Supabase** — PostgreSQL database, row-level security, and authentication
+
+*Frontend (TypeScript)*
+- **Next.js + React** — app router, server components, client interactivity
+- **Recharts** — cognitive score trend charts
+- **Tailwind CSS** — utility base (extended with custom CSS design tokens)
+
 **Quick dev run:** create a Python venv, `pip install -r requirements-api.txt`, run the API with `uvicorn api.main:app --reload`, and start the frontend from `apps/dashboard` with `npm ci && npm run dev`.
 
 **Demo note:** For the hackathon we deploy a single Next.js app (merged into dashboard) and expose one Vercel link for the demo
