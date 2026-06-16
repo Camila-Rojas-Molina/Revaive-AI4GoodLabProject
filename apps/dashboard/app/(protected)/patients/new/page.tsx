@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import {
@@ -56,6 +56,7 @@ export default function NewPatientPage() {
   const [patientPin, setPatientPin] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const set = (k: keyof FormData, v: string | number) => {
     setF(s => ({ ...s, [k]: v }))
@@ -76,6 +77,9 @@ export default function NewPatientPage() {
 
   const submit = async () => {
     if (!validate()) return
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
     setStep('calculating')
     setSaveError(null)
     try {
@@ -85,6 +89,7 @@ export default function NewPatientPage() {
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients`, {
         method: 'POST',
+        signal: ctrl.signal,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
           name: f.name,
@@ -112,10 +117,31 @@ export default function NewPatientPage() {
         confidence: patient.pod_risk_score,
       })
       setStep('result')
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return
       setSaveError('Could not reach the API server. Make sure it is running on localhost:8000.')
       setStep('form')
     }
+  }
+
+  // Cancel any in-flight request, delete the pending patient, and return to the intake form.
+  const goBackToForm = async () => {
+    abortRef.current?.abort()
+    if (savedPatientId) {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/${savedPatientId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+        }
+      } catch { /* non-fatal */ }
+      setSavedPatientId(null)
+    }
+    setResult(null)
+    setStep('form')
   }
 
   // Create the Supabase auth account and show the credentials screen.
@@ -137,15 +163,25 @@ export default function NewPatientPage() {
   const done = [f.name.trim(), f.gender, f.admission, f.priorDelirium, f.dementia, f.surgical].filter(Boolean).length
   const total = 6
 
-  if (step === 'calculating') return <LoadingOverlay title="Calculating risk…" sub="Analysing clinical factors" />
+  if (step === 'calculating') return (
+    <Screen bg="var(--bg)" topBar={
+      <TopBar title="New assessment"
+        left={<IconButton name="chevLeft" label="Back" onClick={goBackToForm} />} />
+    }>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 22, minHeight: '60vh', textAlign: 'center' }}>
+        <LoadingOverlay title="Calculating risk…" sub="Analysing clinical factors" />
+      </div>
+    </Screen>
+  )
 
   // ── Credentials card shown after account creation ───────────────────────
   if (step === 'credentials' && savedPatientId && patientPin) {
     return (
-      <Screen bg="var(--bg)" topBar={<TopBar title="Patient added to ward" />}>
+      <Screen bg="var(--bg)" topBar={<TopBar />}>
         <div style={{ textAlign: 'center', padding: '28px 0 12px' }}>
-          <Icon name="checkCircle" size={60} style={{ color: 'var(--good)' }} />
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginTop: 16, lineHeight: 1.3 }}>
+          <Icon name="checkCircle" size={60} style={{ color: 'var(--good)', display: 'block', margin: '0 auto 16px' }} />
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1.3 }}>
             {f.name} has been added.
           </div>
           <p style={{ fontSize: 15.5, color: 'var(--text-muted)', marginTop: 8, maxWidth: 340, margin: '8px auto 0' }}>
@@ -161,7 +197,7 @@ export default function NewPatientPage() {
 
           {([
             { label: 'Name', value: f.name, mono: false, large: false },
-            { label: 'Patient ID', value: savedPatientId, mono: true, large: false },
+            { label: 'Patient ID', value: savedPatientId.slice(0, 8), mono: true, large: false },
             { label: 'PIN', value: patientPin, mono: true, large: true },
           ] as const).map(({ label, value, mono, large }) => (
             <div key={label} style={{ padding: '14px 20px', borderTop: '1px solid var(--line)' }}>
@@ -195,7 +231,7 @@ export default function NewPatientPage() {
     const tv = toneVar(result.tone)
     return (
       <Screen bg="var(--bg)" topBar={<TopBar title="Assessment result"
-        left={<IconButton name="chevLeft" label="Back" onClick={() => setStep('form')} />} />}>
+        left={<IconButton name="chevLeft" label="Back" onClick={goBackToForm} />} />}>
 
         <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
           <div style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -252,7 +288,7 @@ export default function NewPatientPage() {
           {saving ? 'Creating account…' : 'Add patient to ward'}
         </Button>
         <div style={{ height: 12 }} />
-        <Button full variant="ghost" disabled={saving} onClick={() => setStep('form')}>Back to form</Button>
+        <Button full variant="ghost" disabled={saving} onClick={goBackToForm}>Back to form</Button>
       </Screen>
     )
   }
