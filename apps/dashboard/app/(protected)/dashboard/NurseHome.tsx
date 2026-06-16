@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { getPatientPins } from './actions'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import {
-  Screen, IconButton, Button,
+  Screen, IconButton, Button, BottomNav,
   SearchBar, EmptyState, KebabMenu, ConfirmDialog,
   Icon,
 } from '@/components/ui'
@@ -32,6 +32,9 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
   const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [pinMap, setPinMap] = useState<Record<string, string>>({})
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -86,6 +89,47 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
     }
   }
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setBulkDeleting(true)
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      await Promise.all([...selectedIds].map(id =>
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+      ))
+      setPatients(list => list.filter(p => !selectedIds.has(p.id)))
+      setSelectedIds(new Set())
+      setSelectMode(false)
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === sorted.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(sorted.map(p => p.id)))
+    }
+  }
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+  }
+
   return (
     <Screen
       bg="#f2eee2"
@@ -100,41 +144,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
           <IconButton name="bell" label="Alerts" badge onClick={() => router.push('/alerts')} />
         </header>
       }
-      bottomNav={
-        <nav style={{
-          flexShrink: 0, display: 'flex', justifyContent: 'space-around', alignItems: 'stretch',
-          padding: '10px 18px 20px', background: 'var(--surface)',
-          borderTop: '1px solid var(--line)', zIndex: 20, position: 'sticky', bottom: 0,
-        }}>
-          {NURSE_NAV.map(it => {
-            const active = it.href === '/dashboard'
-            return (
-              <button key={it.href} onClick={() => router.push(it.href)}
-                aria-current={active ? 'page' : undefined}
-                style={{
-                  flex: 1, maxWidth: 150, border: 'none', background: 'transparent',
-                  cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', gap: 5, padding: '8px 4px',
-                }}>
-                <span style={{
-                  display: 'grid', placeItems: 'center', width: 64, height: 36, borderRadius: 20,
-                  background: active ? '#124d47' : 'transparent',
-                  color: active ? '#fff' : 'var(--text-faint)',
-                  transition: 'background .15s, color .15s',
-                }}>
-                  <Icon name={it.icon} size={25} stroke={active ? 2.4 : 2} />
-                </span>
-                <span style={{
-                  fontSize: 13, fontWeight: active ? 700 : 500,
-                  color: active ? '#124d47' : 'var(--text-faint)',
-                }}>
-                  {it.label}
-                </span>
-              </button>
-            )
-          })}
-        </nav>
-      }
+      bottomNav={<BottomNav items={NURSE_NAV} />}
     >
 
       <ConfirmDialog
@@ -154,26 +164,63 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30,
             color: '#124d47', margin: '0 0 5px', letterSpacing: '-.02em', lineHeight: 1.05,
           }}>
-            Your patients
+            {selectMode ? `${selectedIds.size} selected` : 'Your patients'}
           </h1>
           <p style={{ fontSize: 14.5, color: 'rgba(18,77,71,0.6)', margin: 0, fontWeight: 500 }}>
-            {patients.length} active assessment{patients.length === 1 ? '' : 's'}
+            {selectMode
+              ? <button onClick={toggleSelectAll} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 14.5, color: 'var(--primary)', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>
+                  {selectedIds.size === sorted.length ? 'Deselect all' : 'Select all'}
+                </button>
+              : `${patients.length} active assessment${patients.length === 1 ? '' : 's'}`
+            }
           </p>
         </div>
-        <button
-          onClick={() => router.push('/patients/new')}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '12px 22px', borderRadius: 999,
-            background: '#124d47', color: '#F4F1E6',
-            border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
-            fontFamily: 'var(--font-ui)', flexShrink: 0, whiteSpace: 'nowrap',
-            boxShadow: '0 4px 16px -6px rgba(18,77,71,.5)',
-          }}
-        >
-          <Icon name="plus" size={18} />
-          New patient
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          {selectMode ? (
+            <button
+              onClick={exitSelectMode}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '12px 22px', borderRadius: 999,
+                background: 'rgba(255,255,255,0.7)', color: '#124d47',
+                border: '1.5px solid var(--line-strong)', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              Done
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectMode(true)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '12px 18px', borderRadius: 999,
+                  background: 'rgba(255,255,255,0.7)', color: '#124d47',
+                  border: '1.5px solid var(--line-strong)', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'var(--font-ui)',
+                }}
+              >
+                <Icon name="edit" size={17} />
+                Edit
+              </button>
+              <button
+                onClick={() => router.push('/patients/new')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  padding: '12px 22px', borderRadius: 999,
+                  background: '#124d47', color: '#F4F1E6',
+                  border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                  fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap',
+                  boxShadow: '0 4px 16px -6px rgba(18,77,71,.5)',
+                }}
+              >
+                <Icon name="plus" size={18} />
+                New patient
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Search */}
@@ -256,26 +303,29 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
               : p.pod_risk_label === 'low'
               ? { bg: '#d4e8e4', color: '#124d47', label: 'low risk' }
               : { bg: '#fef3c7', color: '#92400e', label: 'moderate risk' }
+            const isSelected = selectedIds.has(p.id)
             return (
               <div
                 key={p.id}
-                onClick={() => router.push(`/patients/${p.id}`)}
+                onClick={() => selectMode ? toggleSelect(p.id) : router.push(`/patients/${p.id}`)}
                 style={{
                   display: 'flex', alignItems: 'center', cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.45)',
+                  background: isSelected ? 'rgba(18,77,71,0.08)' : 'rgba(255,255,255,0.45)',
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
                   borderRadius: 22, overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.6)',
+                  border: isSelected ? '1.5px solid rgba(18,77,71,0.4)' : '1px solid rgba(255,255,255,0.6)',
                   boxShadow: '0 4px 20px -8px rgba(18,77,71,.2)',
-                  transition: 'transform .12s, box-shadow .15s',
+                  transition: 'transform .12s, box-shadow .15s, background .1s, border-color .1s',
                 }}
                 onMouseEnter={e => {
+                  if (selectMode) return
                   const el = e.currentTarget as HTMLElement
                   el.style.transform = 'translateY(-2px)'
                   el.style.boxShadow = '0 8px 28px -8px rgba(18,77,71,.3)'
                 }}
                 onMouseLeave={e => {
+                  if (selectMode) return
                   const el = e.currentTarget as HTMLElement
                   el.style.transform = 'none'
                   el.style.boxShadow = '0 4px 20px -8px rgba(18,77,71,.2)'
@@ -286,7 +336,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   padding: '16px 14px 16px 18px',
                   borderRight: '1px solid rgba(18,77,71,0.15)',
-                  minWidth: 68, flexShrink: 0,
+                  width: 92, flexShrink: 0,
                 }}>
                   <span style={{
                     fontSize: 32, fontWeight: 800, color: '#124d47', lineHeight: 1,
@@ -350,26 +400,70 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                   </div>
                 </div>
 
-                {/* Risk badge + kebab */}
+                {/* Risk badge + kebab / checkbox */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px 0 8px', flexShrink: 0 }}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center',
-                    padding: '6px 14px', borderRadius: 999,
-                    fontSize: 12.5, fontWeight: 700,
-                    background: riskStyle.bg, color: riskStyle.color,
-                  }}>
-                    {riskStyle.label}
-                  </span>
-                  <div>
-                    <KebabMenu items={[
-                      { label: 'Edit patient', icon: 'edit', onClick: () => router.push(`/patients/${p.id}/edit`) },
-                      { label: 'Delete patient', icon: 'trash', danger: true, onClick: () => setDeleteTarget(p) },
-                    ]} />
-                  </div>
+                  {selectMode ? (
+                    <span style={{
+                      width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                      display: 'grid', placeItems: 'center',
+                      background: isSelected ? '#124d47' : 'rgba(255,255,255,0.8)',
+                      border: isSelected ? '2px solid #124d47' : '2px solid rgba(18,77,71,0.3)',
+                      transition: 'background .12s, border-color .12s',
+                    }}>
+                      {isSelected && <Icon name="check" size={14} style={{ color: '#fff' }} />}
+                    </span>
+                  ) : (
+                    <>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        padding: '6px 14px', borderRadius: 999,
+                        fontSize: 12.5, fontWeight: 700,
+                        background: riskStyle.bg, color: riskStyle.color,
+                      }}>
+                        {riskStyle.label}
+                      </span>
+                      <div onClick={e => e.stopPropagation()}>
+                        <KebabMenu items={[
+                          { label: 'Edit patient', icon: 'edit', onClick: () => router.push(`/patients/${p.id}/edit`) },
+                          { label: 'Delete patient', icon: 'trash', danger: true, onClick: () => setDeleteTarget(p) },
+                        ]} />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Bulk delete bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div style={{
+          position: 'sticky', bottom: 80, zIndex: 30,
+          margin: '16px 0 0',
+          background: '#7f1d1d', borderRadius: 18,
+          padding: '14px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          boxShadow: '0 8px 32px -8px rgba(127,29,29,.5)',
+        }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>
+            {selectedIds.size} patient{selectedIds.size !== 1 ? 's' : ''} selected
+          </span>
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 20px', borderRadius: 999,
+              background: bulkDeleting ? 'rgba(255,255,255,0.3)' : '#fff',
+              color: '#7f1d1d', border: 'none', fontSize: 14, fontWeight: 800,
+              cursor: bulkDeleting ? 'default' : 'pointer', fontFamily: 'var(--font-ui)',
+            }}
+          >
+            <Icon name="trash" size={16} />
+            {bulkDeleting ? 'Removing…' : 'Remove'}
+          </button>
         </div>
       )}
     </Screen>

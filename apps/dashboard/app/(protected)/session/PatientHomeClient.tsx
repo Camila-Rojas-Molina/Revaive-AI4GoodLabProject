@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Screen, IconButton, Icon } from '@/components/ui'
+import { Screen, IconButton, Icon, BottomNav } from '@/components/ui'
 
 const PATIENT_NAV = [
   { href: '/session', label: 'Home', icon: 'home' },
@@ -12,6 +13,7 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
   patientId: string; firstName: string; greeting: string; todayDone: boolean
 }) {
   const router = useRouter()
+  const [pressed, setPressed] = useState(false)
 
   return (
     <Screen
@@ -27,41 +29,7 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
           <IconButton name="bell" label="Notifications" onClick={() => router.push('/notifications')} />
         </header>
       }
-      bottomNav={
-        <nav style={{
-          flexShrink: 0, display: 'flex', justifyContent: 'space-around', alignItems: 'stretch',
-          padding: '10px 18px 20px', background: 'var(--surface)',
-          borderTop: '1px solid var(--line)', zIndex: 20, position: 'sticky', bottom: 0,
-        }}>
-          {PATIENT_NAV.map(it => {
-            const active = it.href === '/session'
-            return (
-              <button key={it.href} onClick={() => router.push(it.href)}
-                aria-current={active ? 'page' : undefined}
-                style={{
-                  flex: 1, maxWidth: 150, border: 'none', background: 'transparent',
-                  cursor: 'pointer', display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', gap: 5, padding: '8px 4px',
-                }}>
-                <span style={{
-                  display: 'grid', placeItems: 'center', width: 64, height: 36, borderRadius: 20,
-                  background: active ? '#124d47' : 'transparent',
-                  color: active ? '#fff' : 'var(--text-faint)',
-                  transition: 'background .15s, color .15s',
-                }}>
-                  <Icon name={it.icon} size={25} stroke={active ? 2.4 : 2} />
-                </span>
-                <span style={{
-                  fontSize: 13, fontWeight: active ? 700 : 500,
-                  color: active ? '#124d47' : 'var(--text-faint)',
-                }}>
-                  {it.label}
-                </span>
-              </button>
-            )
-          })}
-        </nav>
-      }>
+      bottomNav={<BottomNav items={PATIENT_NAV} />}>
 
       <div style={{ marginBottom: 48, textAlign: 'center', paddingTop: 24 }}>
         <h1 style={{
@@ -100,13 +68,20 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
       ) : (
         <button
           onClick={() => router.push(`/session/active?patientId=${patientId}`)}
+          onMouseDown={() => setPressed(true)}
+          onMouseUp={() => setPressed(false)}
+          onMouseLeave={() => setPressed(false)}
+          onTouchStart={() => setPressed(true)}
+          onTouchEnd={() => setPressed(false)}
           aria-label="Start daily session"
           style={{
             width: '100%', border: 'none', cursor: 'pointer',
-            background: '#124d47', borderRadius: 24,
-            boxShadow: '0 8px 32px -8px rgba(18,77,71,.45)',
+            background: pressed ? '#0d3832' : '#124d47', borderRadius: 24,
+            boxShadow: pressed ? '0 2px 8px -4px rgba(18,77,71,.3)' : '0 8px 32px -8px rgba(18,77,71,.45)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             padding: '50px 32px 44px', marginBottom: 24,
+            transform: pressed ? 'scale(0.97)' : 'scale(1)',
+            transition: 'transform .12s ease, box-shadow .12s ease, background .12s ease',
           }}>
           <span style={{ position: 'relative', display: 'grid', placeItems: 'center', marginBottom: 28 }}>
             <span style={{

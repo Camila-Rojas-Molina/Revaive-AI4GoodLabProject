@@ -281,7 +281,7 @@ export const LineChart = ({ data, height = 220 }: {
   data: { label: string; v: number }[]; height?: number
 }) => {
   if (data.length < 2) return null
-  const w = 700, h = height, pad = { l: 8, r: 8, t: 22, b: 30 }
+  const w = 700, h = height, pad = { l: 32, r: 32, t: 22, b: 30 }
   const xs = (i: number) => pad.l + (i * (w - pad.l - pad.r)) / (data.length - 1)
   const ys = (v: number) => pad.t + (1 - v / 100) * (h - pad.t - pad.b)
   const pts = data.map((d, i) => [xs(i), ys(d.v)])

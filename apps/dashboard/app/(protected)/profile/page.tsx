@@ -10,7 +10,6 @@ import {
 
 const PATIENT_NAV = [
   { href: '/session', label: 'Home', icon: 'home' },
-  { href: '/progress', label: 'Progress', icon: 'chart' },
   { href: '/profile', label: 'Profile', icon: 'user' },
 ]
 
