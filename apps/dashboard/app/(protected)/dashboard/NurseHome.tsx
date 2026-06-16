@@ -342,7 +342,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                     fontSize: 32, fontWeight: 800, color: '#124d47', lineHeight: 1,
                     fontFamily: 'var(--font-display)', letterSpacing: '-.02em',
                   }}>
-                    {latestScore != null ? latestScore : '—'}
+                    {latestScore != null ? Math.round(latestScore) : '—'}
                   </span>
                   <span style={{
                     fontSize: 10, color: 'rgba(18,77,71,0.5)', marginTop: 4,
