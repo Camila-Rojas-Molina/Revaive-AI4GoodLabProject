@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import {
@@ -15,7 +15,27 @@ const PATIENT_NAV = [
 
 export default function ProfilePage() {
   const [reminders, setReminders] = useState(true)
+  const [patientName, setPatientName] = useState<string | null>(null)
+  const [patientId, setPatientId] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('patients')
+        .select('id, name')
+        .eq('profile_id', user.id)
+        .single()
+      if (data) {
+        setPatientName(data.name)
+        setPatientId(data.id.slice(0, 8))
+      }
+    }
+    load()
+  }, [])
 
   const signOut = async () => {
     const supabase = createClient()
@@ -36,8 +56,12 @@ export default function ProfilePage() {
           <Icon name="user" size={34} />
         </span>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)' }}>My Profile</div>
-          <div style={{ fontSize: 15.5, color: 'var(--text-muted)' }}>Recovering</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)' }}>
+            {patientName ?? '—'}
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-faint)', fontFamily: 'monospace', letterSpacing: '.06em', marginTop: 2 }}>
+            {patientId ? `ID: ${patientId}` : ''}
+          </div>
           <div style={{ marginTop: 8 }}>
             <Pill tone="primary"><Icon name="heart" size={14} />Care team</Pill>
           </div>
