@@ -52,6 +52,7 @@ type Patient = {
   surgery_type: string | null
   pod_risk_label: 'high' | 'medium' | 'low'; pod_risk_score: number
   profile_id?: string | null
+  risk_feedback?: 'correct' | 'incorrect' | null
   sessions: Session[]
 }
 
@@ -148,7 +149,7 @@ export default function PatientDetailView({ patient, trend }: {
   // Seed from the prop; refreshed by the effect below using patient.id.
   const [sessions, setSessions] = useState<Session[]>(patient.sessions ?? [])
   const [pin, setPin] = useState<string | null>(null)
-  const [riskFeedback, setRiskFeedback] = useState<'correct' | 'incorrect' | null>(null)
+  const [riskFeedback, setRiskFeedback] = useState<'correct' | 'incorrect' | null>(patient.risk_feedback ?? null)
 
   useEffect(() => {
     if (!patient.profile_id) return
@@ -156,6 +157,12 @@ export default function PatientDetailView({ patient, trend }: {
       if (patient.profile_id) setPin(map[patient.profile_id] ?? null)
     })
   }, [patient.profile_id])
+
+  const saveFeedback = async (value: 'correct' | 'incorrect' | null) => {
+    setRiskFeedback(value)
+    const supabase = createClient()
+    await supabase.from('patients').update({ risk_feedback: value }).eq('id', patient.id)
+  }
 
   // Load selected_domains for this patient from Supabase on mount.
   useEffect(() => {
@@ -330,15 +337,21 @@ export default function PatientDetailView({ patient, trend }: {
             {(['correct', 'incorrect'] as const).map(v => (
               <button
                 key={v}
-                onClick={() => setRiskFeedback(riskFeedback === v ? null : v)}
+                onClick={() => saveFeedback(riskFeedback === v ? null : v)}
                 aria-label={v === 'correct' ? 'Mark prediction as correct' : 'Mark prediction as incorrect'}
                 title={v === 'correct' ? 'Correct' : 'Incorrect'}
                 style={{
                   width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
                   border: '1.5px solid',
-                  borderColor: riskFeedback === v ? 'var(--line-strong)' : 'var(--line)',
-                  background: riskFeedback === v ? 'var(--primary-soft)' : 'var(--surface)',
-                  color: riskFeedback === v ? 'var(--primary-2)' : 'var(--text-faint)',
+                  borderColor: riskFeedback === v
+                    ? (v === 'correct' ? 'var(--line-strong)' : 'var(--danger)')
+                    : 'var(--line)',
+                  background: riskFeedback === v
+                    ? (v === 'correct' ? 'var(--primary-soft)' : 'var(--danger-soft)')
+                    : 'var(--surface)',
+                  color: riskFeedback === v
+                    ? (v === 'correct' ? 'var(--primary-2)' : 'var(--danger)')
+                    : 'var(--text-faint)',
                   display: 'grid', placeItems: 'center',
                   transition: 'border-color .15s, background .15s, color .15s',
                 }}
