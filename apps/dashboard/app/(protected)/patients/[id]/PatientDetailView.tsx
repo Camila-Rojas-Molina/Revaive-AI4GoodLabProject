@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase'
 import {
   Screen, TopBar, IconButton, Card, Pill, LineChart, Icon,
   KebabMenu, ConfirmDialog, Button,
-  initials, riskTone, toneVar,
+  initials, riskTone,
 } from '@/components/ui'
 
 const CST_DOMAINS: { key: string; label: string }[] = [
@@ -148,6 +148,7 @@ export default function PatientDetailView({ patient, trend }: {
   // Seed from the prop; refreshed by the effect below using patient.id.
   const [sessions, setSessions] = useState<Session[]>(patient.sessions ?? [])
   const [pin, setPin] = useState<string | null>(null)
+  const [riskFeedback, setRiskFeedback] = useState<'correct' | 'incorrect' | null>(null)
 
   useEffect(() => {
     if (!patient.profile_id) return
@@ -188,7 +189,6 @@ export default function PatientDetailView({ patient, trend }: {
   }, [patient.id])
 
   const tone = riskTone(patient.pod_risk_label)
-  const tv = toneVar(tone)
   const ini = initials(patient.name)
   const firstName = patient.name.split(' ')[0]
 
@@ -317,14 +317,36 @@ export default function PatientDetailView({ patient, trend }: {
         </div>
       </Card>
 
-      {/* Care plan */}
-      <Card style={{ marginBottom: 18, display: 'flex', gap: 14, alignItems: 'flex-start', borderLeft: `4px solid ${tv}` }}>
-        <span style={{ color: tv, flexShrink: 0, marginTop: 2 }}><Icon name="stethoscope" size={26} /></span>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginBottom: 4 }}>Clinical note</div>
-          <p style={{ margin: 0, fontSize: 15, color: 'var(--text-faint)', lineHeight: 1.5, fontStyle: 'italic' }}>
-            {DISCLAIMER}
+      {/* Model note + feedback */}
+      <Card style={{ marginBottom: 18 }}>
+        <p style={{ margin: '0 0 14px', fontSize: 14, color: 'var(--text-faint)', lineHeight: 1.55, fontStyle: 'italic' }}>
+          {DISCLAIMER}
+        </p>
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+            {riskFeedback === null ? 'Was this prediction accurate?' : riskFeedback === 'correct' ? 'Marked as accurate' : 'Marked as inaccurate'}
           </p>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {(['correct', 'incorrect'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setRiskFeedback(riskFeedback === v ? null : v)}
+                aria-label={v === 'correct' ? 'Mark prediction as correct' : 'Mark prediction as incorrect'}
+                title={v === 'correct' ? 'Correct' : 'Incorrect'}
+                style={{
+                  width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+                  border: '1.5px solid',
+                  borderColor: riskFeedback === v ? 'var(--line-strong)' : 'var(--line)',
+                  background: riskFeedback === v ? 'var(--primary-soft)' : 'var(--surface)',
+                  color: riskFeedback === v ? 'var(--primary-2)' : 'var(--text-faint)',
+                  display: 'grid', placeItems: 'center',
+                  transition: 'border-color .15s, background .15s, color .15s',
+                }}
+              >
+                <Icon name={v === 'correct' ? 'check' : 'x'} size={18} />
+              </button>
+            ))}
+          </div>
         </div>
       </Card>
 
