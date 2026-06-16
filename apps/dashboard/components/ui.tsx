@@ -280,13 +280,15 @@ export const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: 
 export const LineChart = ({ data, height = 220 }: {
   data: { label: string; v: number }[]; height?: number
 }) => {
+  const [hovered, setHovered] = useState<number | null>(null)
   if (data.length < 2) return null
-  const w = 700, h = height, pad = { l: 32, r: 32, t: 22, b: 30 }
+  const w = 700, h = height, pad = { l: 52, r: 32, t: 22, b: 38 }
   const xs = (i: number) => pad.l + (i * (w - pad.l - pad.r)) / (data.length - 1)
   const ys = (v: number) => pad.t + (1 - v / 100) * (h - pad.t - pad.b)
   const pts = data.map((d, i) => [xs(i), ys(d.v)])
   const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ')
   const area = line + ` L${xs(data.length - 1)} ${h - pad.b} L${pad.l} ${h - pad.b} Z`
+  const gridLines = [0, 25, 50, 75, 100]
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" aria-label="Score trend" style={{ display: 'block' }}>
       <defs>
@@ -295,20 +297,51 @@ export const LineChart = ({ data, height = 220 }: {
           <stop offset="100%" stopColor="var(--chart)" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {[25, 50, 75].map(g => (
-        <line key={g} x1={pad.l} x2={w - pad.r} y1={ys(g)} y2={ys(g)}
-          stroke="var(--line)" strokeWidth="1" strokeDasharray="2 6" />
+      {/* Y-axis grid lines + labels */}
+      {gridLines.map(g => (
+        <g key={g}>
+          <line x1={pad.l} x2={w - pad.r} y1={ys(g)} y2={ys(g)}
+            stroke="var(--line)" strokeWidth="1" strokeDasharray="2 6" />
+          <text x={pad.l - 14} y={ys(g) + 4.5} textAnchor="end" fontSize="12" fontWeight="600"
+            fill="var(--text-faint)" fontFamily="var(--font-ui)">{g}</text>
+        </g>
       ))}
       <path d={area} fill="url(#cbArea)" />
       <path d={line} fill="none" stroke="var(--chart)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      {pts.map((p, i) => (
-        <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r={i === pts.length - 1 ? 7 : 4.5}
-            fill="var(--surface)" stroke="var(--chart)" strokeWidth="3" />
-          <text x={p[0]} y={h - 9} textAnchor="middle" fontSize="13" fontWeight="600"
-            fill="var(--text-faint)" fontFamily="var(--font-ui)">{data[i].label}</text>
-        </g>
-      ))}
+      {pts.map((p, i) => {
+        const isHov = hovered === i
+        const isLast = i === pts.length - 1
+        const tipW = 72, tipH = 36, tipR = 8
+        const tipX = Math.min(Math.max(p[0] - tipW / 2, pad.l), w - pad.r - tipW)
+        const tipY = p[1] - tipH - 10
+        return (
+          <g key={i} onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}
+            style={{ cursor: 'default' }}>
+            {/* invisible larger hit area */}
+            <circle cx={p[0]} cy={p[1]} r={14} fill="transparent" />
+            <circle cx={p[0]} cy={p[1]} r={isHov ? 7 : (isLast ? 7 : 4.5)}
+              fill="var(--surface)" stroke="var(--chart)" strokeWidth={isHov ? 3.5 : 3} />
+            <text x={p[0]} y={h - 9} textAnchor="middle" fontSize="13" fontWeight="600"
+              fill="var(--text-faint)" fontFamily="var(--font-ui)">{data[i].label}</text>
+            {/* Tooltip */}
+            {isHov && (
+              <g>
+                <rect x={tipX} y={tipY} width={tipW} height={tipH} rx={tipR}
+                  fill="#124d47" />
+                <text x={tipX + tipW / 2} y={tipY + 13} textAnchor="middle"
+                  fontSize="10" fontWeight="700" fill="rgba(255,255,255,0.6)"
+                  fontFamily="var(--font-ui)" letterSpacing="0.08em">SCORE</text>
+                <text x={tipX + tipW / 2} y={tipY + 28} textAnchor="middle"
+                  fontSize="14" fontWeight="800" fill="#fff"
+                  fontFamily="var(--font-ui)">{data[i].v}</text>
+                {/* Arrow */}
+                <polygon points={`${p[0] - 6},${tipY + tipH} ${p[0] + 6},${tipY + tipH} ${p[0]},${tipY + tipH + 7}`}
+                  fill="#124d47" />
+              </g>
+            )}
+          </g>
+        )
+      })}
     </svg>
   )
 }
