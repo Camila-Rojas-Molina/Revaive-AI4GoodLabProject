@@ -45,6 +45,18 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
 
   const query = q.trim().toLowerCase()
 
+  const alertCount = patients.reduce((total, p) => {
+    const sorted = [...(p.sessions ?? [])]
+      .filter(s => s.cognitive_score != null && s.cognitive_score > 0 && s.created_at)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    let patientAlerts = 0
+    if (p.sessions?.some(s => s.flag_escalate)) patientAlerts++
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if ((sorted[i + 1].cognitive_score! - sorted[i].cognitive_score!) >= 20) { patientAlerts++; break }
+    }
+    return total + patientAlerts
+  }, 0)
+
   const counts = { low: 0, medium: 0, high: 0 }
   patients.forEach(p => counts[p.pod_risk_label]++)
 
@@ -141,7 +153,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
           background: 'var(--surface)', borderBottom: '1px solid var(--line)',
         }}>
           <img src="/big_logo.png" alt="Revaive" style={{ height: 60, width: 'auto', display: 'block' }} />
-          <IconButton name="bell" label="Alerts" badge onClick={() => router.push('/alerts')} />
+          <IconButton name="bell" label="Alerts" badge={alertCount} onClick={() => router.push('/alerts')} />
         </header>
       }
       bottomNav={<BottomNav items={NURSE_NAV} />}

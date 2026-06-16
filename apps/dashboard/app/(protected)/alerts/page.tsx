@@ -1,42 +1,88 @@
-import { Screen, TopBar, BottomNav, Card, Icon } from '@/components/ui'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase-server'
+import AlertsClient from './AlertsClient'
 
-const NURSE_NAV = [
-  { href: '/dashboard', label: 'Patients', icon: 'list' },
-  { href: '/alerts', label: 'Alerts', icon: 'bell' },
-  { href: '/settings', label: 'Profile', icon: 'user' },
-]
+export type AlertItem = {
+  id: string
+  patientId: string
+  patientName: string
+  icon: string
+  title: string
+  body: string
+  createdAt: string
+}
 
-const ALERTS = [
-  { tone: 'danger', icon: 'alert', title: 'Samuel Adebayo — High risk', body: 'New assessment flagged. Preventive bundle due.', t: '20m ago' },
-  { tone: 'warn', icon: 'clock', title: 'John Mensah — re-screen due', body: '48-hour re-screen window opens today.', t: '1h ago' },
-  { tone: 'good', icon: 'checkCircle', title: 'Grace Okafor — session complete', body: 'Completed daily session, score 80.', t: '3h ago' },
-]
+type Session = {
+  cognitive_score: number | null
+  session_date: string
+  created_at: string
+  flag_escalate: boolean
+}
 
-const toneVar = (t: string) =>
-  t === 'good' ? 'var(--good)' : t === 'warn' ? 'var(--warn)' : 'var(--danger)'
+type Patient = {
+  id: string
+  name: string
+  sessions: Session[]
+}
 
-export default function AlertsPage() {
-  return (
-    <Screen
-      bg="var(--bg)"
-      topBar={<TopBar title="Alerts" sub="Ward 4B" />}
-      bottomNav={<BottomNav items={NURSE_NAV} />}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {ALERTS.map((n, i) => {
-          const tv = toneVar(n.tone)
-          return (
-            <Card key={i} pad={20} style={{ display: 'flex', gap: 16, alignItems: 'flex-start',
-              borderLeft: `4px solid ${tv}` }}>
-              <span style={{ color: tv, flexShrink: 0, marginTop: 2 }}><Icon name={n.icon} size={26} /></span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{n.title}</div>
-                <p style={{ margin: '4px 0 6px', fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.45 }}>{n.body}</p>
-                <span style={{ fontSize: 13.5, color: 'var(--text-faint)', fontWeight: 600 }}>{n.t}</span>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-    </Screen>
-  )
+const SCORE_DROP_THRESHOLD = 20
+
+function buildAlerts(patients: Patient[]): AlertItem[] {
+  const alerts: AlertItem[] = []
+
+  for (const patient of patients) {
+    const sorted = [...(patient.sessions ?? [])]
+      .filter(s => s.created_at)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+
+    for (const s of sorted) {
+      if (s.flag_escalate) {
+        alerts.push({
+          id: `${patient.id}-escalate-${s.created_at}`,
+          patientId: patient.id,
+          patientName: patient.name,
+          icon: 'alert',
+          title: `${patient.name} — distress flagged`,
+          body: 'Patient expressed distress during this session. Follow-up recommended.',
+          createdAt: s.created_at,
+        })
+      }
+    }
+
+    const scored = sorted.filter(s => s.cognitive_score != null && s.cognitive_score > 0)
+    for (let i = 0; i < scored.length - 1; i++) {
+      const cur = scored[i], prev = scored[i + 1]
+      const drop = (prev.cognitive_score as number) - (cur.cognitive_score as number)
+      if (drop >= SCORE_DROP_THRESHOLD) {
+        alerts.push({
+          id: `${patient.id}-drop-${cur.created_at}`,
+          patientId: patient.id,
+          patientName: patient.name,
+          icon: 'alert',
+          title: `${patient.name} — score dropped by ${Math.round(drop)} pts`,
+          body: `Fell from ${Math.round(prev.cognitive_score as number)} to ${Math.round(cur.cognitive_score as number)}.`,
+          createdAt: cur.created_at,
+        })
+      }
+    }
+  }
+
+  return alerts.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+
+export default async function AlertsPage() {
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect('/login')
+
+  let patients: Patient[] = []
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/patients`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: 'no-store',
+    })
+    if (res.ok) patients = await res.json()
+  } catch { /* API offline */ }
+
+  return <AlertsClient alerts={buildAlerts(patients)} />
 }

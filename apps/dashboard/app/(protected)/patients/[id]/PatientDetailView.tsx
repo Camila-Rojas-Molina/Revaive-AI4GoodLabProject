@@ -39,6 +39,7 @@ type Session = {
   id?: string
   cognitive_score: number | null
   session_date: string
+  created_at?: string
   flag_escalate: boolean
   transcript?: string
   theme?: string
@@ -194,12 +195,20 @@ export default function PatientDetailView({ patient, trend }: {
   const tv = toneVar(tone)
   const ini = initials(patient.name)
   const firstName = patient.name.split(' ')[0]
-  const sessionCount = sessions.length
-  const lastScore = sessions.find(s => s.cognitive_score != null && s.cognitive_score > 0)?.cognitive_score ?? null
-  const trendDir = getTrendDir(sessions)
 
-  // Build chart data from sessions (desc order → reverse to oldest-first, take last 7 with scores).
-  const sessionChartData = [...sessions]
+  // Sort newest-first using created_at timestamp so same-day sessions order correctly.
+  const sortedSessions = [...sessions].sort((a, b) => {
+    const ta = a.created_at ?? a.session_date
+    const tb = b.created_at ?? b.session_date
+    return tb.localeCompare(ta)
+  })
+
+  const sessionCount = sortedSessions.length
+  const lastScore = sortedSessions.find(s => s.cognitive_score != null && s.cognitive_score > 0)?.cognitive_score ?? null
+  const trendDir = getTrendDir(sortedSessions)
+
+  // Build chart data: oldest-first for left-to-right reading, take last 7 with scores.
+  const sessionChartData = [...sortedSessions]
     .reverse()
     .filter(s => s.cognitive_score != null && s.cognitive_score > 0)
     .slice(-7)
@@ -329,7 +338,7 @@ export default function PatientDetailView({ patient, trend }: {
           ['Sessions', sessionCount],
           ['Latest score', lastScore != null ? lastScore : '—'],
           ['Avg session duration', (() => {
-            const scored = sessions.filter(s => s.duration_seconds != null)
+            const scored = sortedSessions.filter(s => s.duration_seconds != null)
             if (scored.length === 0) return '—'
             const avg = scored.reduce((sum, s) => sum + (s.duration_seconds ?? 0), 0) / scored.length
             return `${Math.round(avg / 60)} min`
@@ -343,25 +352,31 @@ export default function PatientDetailView({ patient, trend }: {
       </Card>
 
       {/* ── 7-day cognitive score chart ──────────────────────────────────── */}
-      {chartData.length > 1 && (
-        <Card style={{ marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{
-              fontSize: 14, fontWeight: 700, letterSpacing: '.08em',
-              textTransform: 'uppercase', color: 'var(--text-faint)',
-            }}>
-              Cognitive Score — Per Session
-            </div>
-            {isMockData
-              ? <Pill tone="neutral">No data yet</Pill>
-              : <Pill tone={trendDir === 'improving' ? 'good' : trendDir === 'declining' ? 'danger' : 'neutral'}>
-                  {trendDir === 'improving' ? '↑ Improving' : trendDir === 'declining' ? '↓ Declining' : '→ Stable'}
-                </Pill>
-            }
+      <Card style={{ marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{
+            fontSize: 14, fontWeight: 700, letterSpacing: '.08em',
+            textTransform: 'uppercase', color: 'var(--text-faint)',
+          }}>
+            Cognitive Score — Per Session
           </div>
+          {!isMockData && (
+            <Pill tone={trendDir === 'improving' ? 'good' : trendDir === 'declining' ? 'danger' : 'neutral'}>
+              {trendDir === 'improving' ? '↑ Improving' : trendDir === 'declining' ? '↓ Declining' : '→ Stable'}
+            </Pill>
+          )}
+        </div>
+        {isMockData ? (
+          <div style={{
+            height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-faint)', fontSize: 15, fontWeight: 600,
+          }}>
+            No data yet
+          </div>
+        ) : (
           <LineChart data={chartData} />
-        </Card>
-      )}
+        )}
+      </Card>
 
       {/* ── Session focus topic pills ─────────────────────────────────────── */}
       <Card style={{ marginBottom: 18 }}>
@@ -398,7 +413,7 @@ export default function PatientDetailView({ patient, trend }: {
       </Card>
 
       {/* ── Daily session report cards ────────────────────────────────────── */}
-      {sessions.length > 0 && (
+      {sortedSessions.length > 0 && (
         <Card pad={0} style={{ marginBottom: 18, overflow: 'hidden' }}>
           <div style={{
             fontSize: 14, fontWeight: 700, letterSpacing: '.08em',
@@ -407,9 +422,9 @@ export default function PatientDetailView({ patient, trend }: {
             Session Reports
           </div>
 
-          {(showAllSessions ? sessions : sessions.slice(0, 4)).map((session, i) => {
+          {(showAllSessions ? sortedSessions : sortedSessions.slice(0, 4)).map((session, i) => {
             const rowKey = session.id ?? session.session_date
-            const prevSession = sessions[i + 1]
+            const prevSession = sortedSessions[i + 1]
             const isExpanded = expandedId === rowKey
             const cs = session.component_scores
             const pcs = prevSession?.component_scores
@@ -435,7 +450,14 @@ export default function PatientDetailView({ patient, trend }: {
                 >
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--text)' }}>
-                      {(() => { const [y,m,d] = session.session_date.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) })()}
+                      {(() => {
+                        const [y,m,d] = session.session_date.split('-').map(Number)
+                        const dateStr = new Date(y,m-1,d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                        if (!session.created_at) return dateStr
+                        const t = new Date(session.created_at)
+                        const timeStr = t.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                        return `${dateStr} · ${timeStr}`
+                      })()}
                     </div>
                     {session.theme && (
                       <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 2, textTransform: 'capitalize' }}>
@@ -443,6 +465,10 @@ export default function PatientDetailView({ patient, trend }: {
                       </div>
                     )}
                   </div>
+
+                  {session.flag_escalate && (
+                    <Icon name="alert" size={17} style={{ color: 'var(--danger)', flexShrink: 0 }} />
+                  )}
 
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>
@@ -458,16 +484,11 @@ export default function PatientDetailView({ patient, trend }: {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {session.flag_escalate && (
-                      <Icon name="alert" size={17} style={{ color: 'var(--danger)' }} />
-                    )}
-                    <Icon
-                      name={isExpanded ? 'chevDown' : 'chevRight'}
-                      size={18}
-                      style={{ color: 'var(--text-faint)' }}
-                    />
-                  </div>
+                  <Icon
+                    name={isExpanded ? 'chevDown' : 'chevRight'}
+                    size={18}
+                    style={{ color: 'var(--text-faint)', flexShrink: 0 }}
+                  />
                 </div>
 
                 {/* ── Expanded body */}
@@ -544,7 +565,7 @@ export default function PatientDetailView({ patient, trend }: {
             )
           })}
 
-          {sessions.length > 4 && (
+          {sortedSessions.length > 4 && (
             <div style={{ borderTop: '1px solid var(--line)', padding: '14px 20px', textAlign: 'center' }}>
               <button
                 onClick={() => setShowAllSessions(v => !v)}
@@ -555,7 +576,7 @@ export default function PatientDetailView({ patient, trend }: {
                   textDecoration: 'underline', textUnderlineOffset: 3,
                 }}
               >
-                {showAllSessions ? 'Show fewer' : `View all ${sessions.length} sessions`}
+                {showAllSessions ? 'Show fewer' : `View all ${sortedSessions.length} sessions`}
               </button>
             </div>
           )}

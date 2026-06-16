@@ -52,6 +52,7 @@ export const Icon = ({ name, size = 24, stroke = 2, style }: {
     mail: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 7 9-7"/></>,
     filter: <><path d="M4 6h16M7 12h10M10 18h4"/></>,
     stop: <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>,
+    refresh: <><path d="M21 12a9 9 0 1 1-9-9c2.4 0 4.6.9 6.3 2.4"/><path d="M21 3v6h-6"/></>,
   }
   return <svg {...p}>{paths[name] ?? null}</svg>
 }
@@ -443,17 +444,35 @@ export const TopBar = ({ title, brand, left, right, sub }: {
 )
 
 export const IconButton = ({ name, label, onClick, badge }: {
-  name: string; label: string; onClick?: () => void; badge?: boolean
-}) => (
-  <button onClick={onClick} aria-label={label}
-    style={{ width: 50, height: 50, borderRadius: 14, border: '1px solid var(--line)',
-      background: 'var(--surface)', color: 'var(--text)', display: 'grid', placeItems: 'center',
-      cursor: 'pointer', position: 'relative' }}>
-    <Icon name={name} size={24} />
-    {badge && <span style={{ position: 'absolute', top: 9, right: 9, width: 9, height: 9,
-      borderRadius: '50%', background: 'var(--danger)', boxShadow: '0 0 0 2px var(--surface)' }} />}
-  </button>
-)
+  name: string; label: string; onClick?: () => void; badge?: boolean | number
+}) => {
+  const count = typeof badge === 'number' ? badge : 0
+  const show = badge === true || count > 0
+  return (
+    <button onClick={onClick} aria-label={label}
+      style={{ width: 50, height: 50, borderRadius: 14, border: '1px solid var(--line)',
+        background: 'var(--surface)', color: 'var(--text)', display: 'grid', placeItems: 'center',
+        cursor: 'pointer', position: 'relative' }}>
+      <Icon name={name} size={24} />
+      {show && (
+        count > 0 ? (
+          <span style={{
+            position: 'absolute', top: 7, right: 7,
+            minWidth: 17, height: 17, borderRadius: 9, padding: '0 4px',
+            background: 'var(--danger)', boxShadow: '0 0 0 2px var(--surface)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, fontWeight: 800, color: '#fff', lineHeight: 1,
+          }}>
+            {count > 99 ? '99+' : count}
+          </span>
+        ) : (
+          <span style={{ position: 'absolute', top: 9, right: 9, width: 9, height: 9,
+            borderRadius: '50%', background: 'var(--danger)', boxShadow: '0 0 0 2px var(--surface)' }} />
+        )
+      )}
+    </button>
+  )
+}
 
 export const BottomNav = ({ items }: { items: { href: string; label: string; icon: string }[] }) => {
   const pathname = usePathname()
