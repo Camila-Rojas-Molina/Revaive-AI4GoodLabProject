@@ -65,11 +65,7 @@ const MOCK_CHART_DATA = [
   { label: 'Day 7', v: 65 },
 ]
 
-const carePlan: Record<string, string> = {
-  low: 'Standard monitoring. Re-screen if condition changes.',
-  medium: 'Preventive bundle active: reorientation, sleep hygiene, early mobilisation. Re-screen daily.',
-  high: 'Flagged to care team. Intensive prevention and daily cognitive sessions.',
-}
+const DISCLAIMER = 'This is a model-generated prediction. Always confirm with clinical assessment and professional judgement.'
 
 // Sessions arrive newest-first. Compare recent vs oldest to get direction.
 function getTrendDir(sessions: Session[]): 'improving' | 'declining' | 'stable' {
@@ -325,9 +321,9 @@ export default function PatientDetailView({ patient, trend }: {
       <Card style={{ marginBottom: 18, display: 'flex', gap: 14, alignItems: 'flex-start', borderLeft: `4px solid ${tv}` }}>
         <span style={{ color: tv, flexShrink: 0, marginTop: 2 }}><Icon name="stethoscope" size={26} /></span>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginBottom: 4 }}>Care plan</div>
-          <p style={{ margin: 0, fontSize: 15.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            {carePlan[patient.pod_risk_label]}
+          <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginBottom: 4 }}>Clinical note</div>
+          <p style={{ margin: 0, fontSize: 15, color: 'var(--text-faint)', lineHeight: 1.5, fontStyle: 'italic' }}>
+            {DISCLAIMER}
           </p>
         </div>
       </Card>

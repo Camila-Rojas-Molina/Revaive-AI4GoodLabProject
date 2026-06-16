@@ -48,10 +48,7 @@ const SURGICAL = [
 ]
 const YNU = ['Yes', 'No', 'Unknown']
 
-const COPY: Record<string, string> = {
-  Low: 'Standard monitoring. Re-screen if condition changes.',
-  High: 'Flag to care team. Begin intensive prevention and schedule daily cognitive sessions.',
-}
+const DISCLAIMER = 'This is a model-generated prediction. Always confirm with clinical assessment and professional judgement.'
 
 export default function EditPatientPage({ patient }: { patient: Patient }) {
   const router = useRouter()
@@ -172,8 +169,8 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
               </div>
             </div>
           </div>
-          <p style={{ fontSize: 16.5, color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: 480, margin: '0 auto' }}>
-            {COPY[result.level]}
+          <p style={{ fontSize: 14, color: 'var(--text-faint)', lineHeight: 1.5, maxWidth: 480, margin: '0 auto', fontStyle: 'italic' }}>
+            {DISCLAIMER}
           </p>
         </Card>
 

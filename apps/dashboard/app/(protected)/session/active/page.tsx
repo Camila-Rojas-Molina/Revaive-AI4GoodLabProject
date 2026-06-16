@@ -232,7 +232,7 @@ export default function ActiveSessionPage() {
       // Non-fatal — still navigate away
     }
 
-    router.push('/session')
+    router.push('/session/feedback')
   }
 
   const isIdle = phase === 'idle' || phase === 'starting'
