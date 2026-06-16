@@ -245,7 +245,7 @@ export default function ActiveSessionPage() {
     ? ''
     : (isBotTalking ? 'Speaking…' : 'Listening…')
 
-  const BG = 'linear-gradient(180deg, #0d3b36 0%, #124d47 100%)'
+  const BG = 'linear-gradient(180deg, var(--primary) 0%, var(--primary-2) 100%)'
 
   return (
     <>

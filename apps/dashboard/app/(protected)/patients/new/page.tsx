@@ -142,7 +142,7 @@ export default function NewPatientPage() {
   // ── Credentials card shown after account creation ───────────────────────
   if (step === 'credentials' && savedPatientId && patientPin) {
     return (
-      <Screen bg="#f2eee2" topBar={<TopBar title="Patient added to ward" />}>
+      <Screen bg="var(--bg)" topBar={<TopBar title="Patient added to ward" />}>
         <div style={{ textAlign: 'center', padding: '28px 0 12px' }}>
           <Icon name="checkCircle" size={60} style={{ color: 'var(--good)' }} />
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginTop: 16, lineHeight: 1.3 }}>
@@ -194,7 +194,7 @@ export default function NewPatientPage() {
   if (step === 'result' && result) {
     const tv = toneVar(result.tone)
     return (
-      <Screen bg="#f2eee2" topBar={<TopBar title="Assessment result"
+      <Screen bg="var(--bg)" topBar={<TopBar title="Assessment result"
         left={<IconButton name="chevLeft" label="Back" onClick={() => setStep('form')} />} />}>
 
         <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
@@ -259,7 +259,7 @@ export default function NewPatientPage() {
 
   // ── Intake form ─────────────────────────────────────────────────────────
   return (
-    <Screen bg="#f2eee2" topBar={
+    <Screen bg="var(--bg)" topBar={
       <TopBar title="New assessment" sub={`${done} of ${total} complete`}
         left={<IconButton name="chevLeft" label="Cancel" onClick={() => router.push('/dashboard')} />} />
     }

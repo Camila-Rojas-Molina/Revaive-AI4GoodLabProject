@@ -254,7 +254,7 @@ export default function PatientDetailView({ patient, trend }: {
 
   return (
     <Screen
-      bg="#f2eee2"
+      bg="var(--bg)"
       topBar={
         <TopBar title={patient.name}
           left={<IconButton name="chevLeft" label="Back" onClick={() => router.push('/dashboard')} />}

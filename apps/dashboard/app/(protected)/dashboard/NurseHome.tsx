@@ -132,7 +132,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
 
   return (
     <Screen
-      bg="#f2eee2"
+      bg="var(--bg)"
       topBar={
         <header style={{
           position: 'sticky', top: 0, zIndex: 20, minHeight: 86,
@@ -162,11 +162,11 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
         <div>
           <h1 style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 30,
-            color: '#124d47', margin: '0 0 5px', letterSpacing: '-.02em', lineHeight: 1.05,
+            color: 'var(--primary-2)', margin: '0 0 5px', letterSpacing: '-.02em', lineHeight: 1.05,
           }}>
             {selectMode ? `${selectedIds.size} selected` : 'Your patients'}
           </h1>
-          <p style={{ fontSize: 14.5, color: 'rgba(18,77,71,0.6)', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 14.5, color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>
             {selectMode
               ? <button onClick={toggleSelectAll} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 14.5, color: 'var(--primary)', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>
                   {selectedIds.size === sorted.length ? 'Deselect all' : 'Select all'}
@@ -182,7 +182,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '12px 22px', borderRadius: 999,
-                background: 'rgba(255,255,255,0.7)', color: '#124d47',
+                background: 'rgba(255,255,255,0.7)', color: 'var(--primary)',
                 border: '1.5px solid var(--line-strong)', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                 fontFamily: 'var(--font-ui)',
               }}
@@ -196,7 +196,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '12px 18px', borderRadius: 999,
-                  background: 'rgba(255,255,255,0.7)', color: '#124d47',
+                  background: 'rgba(255,255,255,0.7)', color: 'var(--primary)',
                   border: '1.5px solid var(--line-strong)', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                   fontFamily: 'var(--font-ui)',
                 }}
@@ -209,7 +209,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   padding: '12px 22px', borderRadius: 999,
-                  background: '#124d47', color: '#F4F1E6',
+                  background: 'var(--primary)', color: 'var(--on-primary)',
                   border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
                   fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap',
                   boxShadow: '0 4px 16px -6px rgba(18,77,71,.5)',
@@ -239,9 +239,9 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
       <div style={{ marginBottom: 18, display: 'flex', gap: 6 }}>
         {filterOptions.map(o => {
           const active = filter === o.label
-          const activeBg = o.label === 'Low' ? '#D97706'
-            : o.label === 'High' ? '#BE123C'
-            : '#124d47'
+          const activeBg = o.label === 'Low' ? 'var(--warn)'
+            : o.label === 'High' ? 'var(--danger)'
+            : 'var(--primary)'
           return (
             <button
               key={o.label}
@@ -299,10 +299,10 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
               : null
               : null
             const riskStyle = p.pod_risk_label === 'high'
-              ? { bg: '#fde8e8', color: '#9b1c1c', label: 'high risk' }
+              ? { bg: 'var(--danger-soft)', color: 'var(--danger)', label: 'high risk' }
               : p.pod_risk_label === 'low'
-              ? { bg: '#d4e8e4', color: '#124d47', label: 'low risk' }
-              : { bg: '#fef3c7', color: '#92400e', label: 'moderate risk' }
+              ? { bg: 'var(--good-soft)', color: 'var(--primary)', label: 'low risk' }
+              : { bg: 'var(--warn-soft)', color: 'var(--warn)', label: 'moderate risk' }
             const isSelected = selectedIds.has(p.id)
             return (
               <div
@@ -335,17 +335,17 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                 <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   padding: '16px 14px 16px 18px',
-                  borderRight: '1px solid rgba(18,77,71,0.15)',
+                  borderRight: '1px solid var(--line)',
                   width: 92, flexShrink: 0,
                 }}>
                   <span style={{
-                    fontSize: 32, fontWeight: 800, color: '#124d47', lineHeight: 1,
+                    fontSize: 32, fontWeight: 800, color: 'var(--primary-2)', lineHeight: 1,
                     fontFamily: 'var(--font-display)', letterSpacing: '-.02em',
                   }}>
                     {latestScore != null ? Math.round(latestScore) : '—'}
                   </span>
                   <span style={{
-                    fontSize: 10, color: 'rgba(18,77,71,0.5)', marginTop: 4,
+                    fontSize: 10, color: 'var(--text-faint)', marginTop: 4,
                     fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase',
                   }}>
                     SCORE
@@ -374,24 +374,24 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
 
                 {/* Name + meta */}
                 <div style={{ flex: 1, minWidth: 0, padding: '18px 16px 18px 20px' }}>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: '#124d47', marginBottom: 3, lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 3, lineHeight: 1.2 }}>
                     {p.name}
                   </div>
-                  <div style={{ fontSize: 13.5, color: 'rgba(18,77,71,0.65)', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.3 }}>
                     {[p.surgery_type ?? 'No procedure', p.age ? `${p.age} yrs` : null].filter(Boolean).join(' · ')}
                   </div>
                   <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                     <span style={{
-                      fontSize: 10.5, fontWeight: 700, color: '#124d47',
-                      fontFamily: 'monospace', background: 'rgba(18,77,71,0.12)',
+                      fontSize: 10.5, fontWeight: 700, color: 'var(--primary-2)',
+                      fontFamily: 'monospace', background: 'var(--primary-soft)',
                       borderRadius: 4, padding: '2px 7px', letterSpacing: '.08em', userSelect: 'all',
                     }}>
                       {p.id.slice(0, 8)}
                     </span>
                     {p.profile_id && pinMap[p.profile_id] && (
                       <span style={{
-                        fontSize: 10.5, fontWeight: 700, color: '#124d47',
-                        fontFamily: 'monospace', background: 'rgba(18,77,71,0.12)',
+                        fontSize: 10.5, fontWeight: 700, color: 'var(--primary-2)',
+                        fontFamily: 'monospace', background: 'var(--primary-soft)',
                         borderRadius: 4, padding: '2px 7px', letterSpacing: '.08em',
                       }}>
                         PIN {pinMap[p.profile_id]}
@@ -406,11 +406,11 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
                     <span style={{
                       width: 26, height: 26, borderRadius: 8, flexShrink: 0,
                       display: 'grid', placeItems: 'center',
-                      background: isSelected ? '#124d47' : 'rgba(255,255,255,0.8)',
-                      border: isSelected ? '2px solid #124d47' : '2px solid rgba(18,77,71,0.3)',
+                      background: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.8)',
+                      border: isSelected ? '2px solid var(--primary)' : '2px solid var(--line-strong)',
                       transition: 'background .12s, border-color .12s',
                     }}>
-                      {isSelected && <Icon name="check" size={14} style={{ color: '#fff' }} />}
+                      {isSelected && <Icon name="check" size={14} style={{ color: 'var(--on-primary)' }} />}
                     </span>
                   ) : (
                     <>
@@ -442,7 +442,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
         <div style={{
           position: 'sticky', bottom: 80, zIndex: 30,
           margin: '16px 0 0',
-          background: '#7f1d1d', borderRadius: 18,
+          background: 'var(--danger)', borderRadius: 18,
           padding: '14px 20px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           boxShadow: '0 8px 32px -8px rgba(127,29,29,.5)',
@@ -457,7 +457,7 @@ export default function NurseHome({ patients: initial }: { patients: Patient[] }
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '10px 20px', borderRadius: 999,
               background: bulkDeleting ? 'rgba(255,255,255,0.3)' : '#fff',
-              color: '#7f1d1d', border: 'none', fontSize: 14, fontWeight: 800,
+              color: 'var(--danger)', border: 'none', fontSize: 14, fontWeight: 800,
               cursor: bulkDeleting ? 'default' : 'pointer', fontFamily: 'var(--font-ui)',
             }}
           >

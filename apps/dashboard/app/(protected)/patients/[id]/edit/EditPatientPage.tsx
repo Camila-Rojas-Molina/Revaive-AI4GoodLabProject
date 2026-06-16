@@ -142,7 +142,7 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
   if (step === 'result' && result) {
     const tv = toneVar(result.tone)
     return (
-      <Screen bg="#f2eee2" topBar={<TopBar title="Updated assessment"
+      <Screen bg="var(--bg)" topBar={<TopBar title="Updated assessment"
         left={<IconButton name="chevLeft" label="Back" onClick={() => setStep('form')} />} />}>
 
         <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
@@ -206,7 +206,7 @@ export default function EditPatientPage({ patient }: { patient: Patient }) {
   }
 
   return (
-    <Screen bg="#f2eee2" topBar={
+    <Screen bg="var(--bg)" topBar={
       <TopBar title="Edit assessment" sub={`${done} of ${total} complete`}
         left={<IconButton name="chevLeft" label="Cancel" onClick={() => router.push(`/patients/${patient.id}`)} />} />
     }

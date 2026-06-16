@@ -8,7 +8,7 @@ export default function NotificationsPage() {
 
   return (
     <Screen
-      bg="#f2eee2"
+      bg="var(--bg)"
       topBar={
         <TopBar
           title="Notifications"
@@ -31,10 +31,10 @@ export default function NotificationsPage() {
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
         </div>
-        <p style={{ fontSize: 17, fontWeight: 600, color: 'rgba(18,77,71,0.5)', margin: 0 }}>
+        <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-muted)', margin: 0 }}>
           No notifications
         </p>
-        <p style={{ fontSize: 14.5, color: 'rgba(18,77,71,0.35)', margin: 0 }}>
+        <p style={{ fontSize: 14.5, color: 'var(--text-faint)', margin: 0 }}>
           You're all caught up!
         </p>
       </div>

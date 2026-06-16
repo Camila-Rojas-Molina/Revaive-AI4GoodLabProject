@@ -25,7 +25,7 @@ export default function ProfilePage() {
 
   return (
     <Screen
-      bg="#f2eee2"
+      bg="var(--bg)"
       topBar={<TopBar title="Profile" />}
       bottomNav={<BottomNav items={PATIENT_NAV} />}>
 

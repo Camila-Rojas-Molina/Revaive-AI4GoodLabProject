@@ -22,7 +22,8 @@
   --text: #122E2C; --text-muted: #5C6B68; --text-faint: #8A9794;
   --line: #E2DBC9; --line-strong: #CFC9B6;
   --danger: #B23A2E; --danger-soft: #F3DED9;
-  --warn: #C98A2B; --good: #2E8B7A;
+  --warn: #C98A2B; --warn-soft: #FEF3C7;
+  --good: #2E8B7A; --good-soft: #D4E8E4;
   --ring: #2E8B7A; --chart: #14524D; --chart-soft: #BFD6CD;
 }
 

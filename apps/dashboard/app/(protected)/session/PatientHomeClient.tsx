@@ -17,7 +17,7 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
 
   return (
     <Screen
-      bg="#f2eee2"
+      bg="var(--bg)"
       topBar={
         <header style={{
           position: 'sticky', top: 0, zIndex: 20, minHeight: 86,
@@ -34,18 +34,18 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
       <div style={{ marginBottom: 48, textAlign: 'center', paddingTop: 24 }}>
         <h1 style={{
           fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 44,
-          color: '#124d47', margin: '0 0 10px', letterSpacing: '-.02em', lineHeight: 1.1,
+          color: 'var(--primary-2)', margin: '0 0 10px', letterSpacing: '-.02em', lineHeight: 1.1,
         }}>
           {greeting}, {firstName}
         </h1>
-        <p style={{ fontSize: 18, color: 'rgba(18,77,71,0.6)', margin: 0, fontWeight: 500 }}>
+        <p style={{ fontSize: 18, color: 'var(--text-muted)', margin: 0, fontWeight: 500 }}>
           {todayDone ? 'Great work today!' : 'Ready for your recovery session?'}
         </p>
       </div>
 
       {todayDone ? (
         <div style={{
-          background: '#124d47', borderRadius: 24,
+          background: 'var(--primary-2)', borderRadius: 24,
           boxShadow: '0 8px 32px -8px rgba(18,77,71,.4)',
           padding: '44px 32px', textAlign: 'center', marginBottom: 24,
         }}>
@@ -76,7 +76,7 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
           aria-label="Start daily session"
           style={{
             width: '100%', border: 'none', cursor: 'pointer',
-            background: pressed ? '#0d3832' : '#124d47', borderRadius: 24,
+            background: pressed ? 'var(--primary)' : 'var(--primary-2)', borderRadius: 24,
             boxShadow: pressed ? '0 2px 8px -4px rgba(18,77,71,.3)' : '0 8px 32px -8px rgba(18,77,71,.45)',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             padding: '50px 32px 44px', marginBottom: 24,
@@ -93,8 +93,8 @@ export default function PatientHomeClient({ patientId, firstName, greeting, toda
               display: 'grid', placeItems: 'center',
             }}>
               <span style={{
-                width: 70, height: 70, borderRadius: '50%', background: '#fff',
-                color: '#124d47', display: 'grid', placeItems: 'center',
+                width: 70, height: 70, borderRadius: '50%', background: 'var(--on-primary)',
+                color: 'var(--primary-2)', display: 'grid', placeItems: 'center',
               }}>
                 <Icon name="play" size={34} />
               </span>

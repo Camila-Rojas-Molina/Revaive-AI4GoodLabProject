@@ -327,7 +327,7 @@ export const LineChart = ({ data, height = 220 }: {
             {isHov && (
               <g>
                 <rect x={tipX} y={tipY} width={tipW} height={tipH} rx={tipR}
-                  fill="#124d47" />
+                  fill="var(--primary-2)" />
                 <text x={tipX + tipW / 2} y={tipY + 13} textAnchor="middle"
                   fontSize="10" fontWeight="700" fill="rgba(255,255,255,0.6)"
                   fontFamily="var(--font-ui)" letterSpacing="0.08em">SCORE</text>
@@ -336,7 +336,7 @@ export const LineChart = ({ data, height = 220 }: {
                   fontFamily="var(--font-ui)">{data[i].v}</text>
                 {/* Arrow */}
                 <polygon points={`${p[0] - 6},${tipY + tipH} ${p[0] + 6},${tipY + tipH} ${p[0]},${tipY + tipH + 7}`}
-                  fill="#124d47" />
+                  fill="var(--primary-2)" />
               </g>
             )}
           </g>
