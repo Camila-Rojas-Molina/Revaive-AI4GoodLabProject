@@ -117,7 +117,12 @@ export default function ActiveSessionPage() {
       setIsBotTalking(false)
 
       // End on stop word, distress flag, or bot saying it will alert the nurse
-      const stopWords = ['goodbye', 'bye', 'stop', 'exit']
+      const stopWords = [
+        'goodbye', 'bye', 'stop', 'exit',
+        "i'm done", 'i am done', 'all done', 'finish', 'finished',
+        'end session', 'end the session', 'that\'s enough', 'that is enough',
+        'no more', 'i want to stop', 'i\'d like to stop', 'i would like to stop',
+      ]
       const botResponse = (data.assistant || '').toLowerCase()
       const botAlertsNurse = ['let a nurse know', 'let your nurse know', 'let the nurse know',
         'nurse know right away', 'alert a nurse', 'notify a nurse', 'call a nurse',
