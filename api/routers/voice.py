@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 import tempfile
 import base64
 import time
@@ -33,6 +34,27 @@ except ImportError as exc:
     ) from exc
 
 router = APIRouter()
+
+# Detect when the bot's own response says it will alert the nurse
+_NURSE_RESPONSE_RE = re.compile(
+    r"(let (a|your|the) nurse know|alert (a|your|the) nurse|notify (a|your|the) nurse"
+    r"|call (a|your|the) nurse|get (a|your|the) nurse|nurse know right away"
+    r"|inform (a|your|the) nurse|tell (a|your|the) nurse)",
+    re.IGNORECASE,
+)
+
+# Detect when the bot asked "would you like me to let your nurse know?"
+_NURSE_CONFIRM_ASKED_RE = re.compile(
+    r"would you like me to let your nurse know|should i let your nurse know"
+    r"|want me to (alert|notify|call) your nurse",
+    re.IGNORECASE,
+)
+
+# Detect an affirmative reply from the patient
+_AFFIRMATIVE_RE = re.compile(
+    r"\b(yes|yeah|yep|yup|please|sure|ok|okay|definitely|of course|go ahead)\b",
+    re.IGNORECASE,
+)
 
 
 def _db():
@@ -113,10 +135,22 @@ async def voice_turn(
     is_distress, matched = check_distress(patient_text)
     flag_escalate = is_distress
 
+    # Check if the bot previously asked "would you like me to let your nurse know?"
+    # and the patient is now confirming
+    last_assistant = next((m["content"] for m in reversed(history) if m["role"] == "assistant"), "")
+    nurse_confirm_pending = bool(_NURSE_CONFIRM_ASKED_RE.search(last_assistant))
+    patient_affirmed = bool(_AFFIRMATIVE_RE.search(patient_text))
+
     if is_distress:
         response_text = "I want to make sure you're okay — I'll let your nurse know right away."
+    elif nurse_confirm_pending and patient_affirmed:
+        response_text = "I'll let your nurse know right away."
+        flag_escalate = True
     else:
         response_text = get_response(patient_text, history, patient_profile)
+        # If the bot's response itself mentions alerting the nurse, treat it as an escalation
+        if not flag_escalate and _NURSE_RESPONSE_RE.search(response_text):
+            flag_escalate = True
 
     return JSONResponse({
         "transcript": patient_text,

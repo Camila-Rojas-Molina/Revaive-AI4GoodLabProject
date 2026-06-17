@@ -116,9 +116,13 @@ export default function ActiveSessionPage() {
       if (data.audio) await playBase64(data.audio)
       setIsBotTalking(false)
 
-      // End on stop word or distress
+      // End on stop word, distress flag, or bot saying it will alert the nurse
       const stopWords = ['goodbye', 'bye', 'stop', 'exit']
-      if (stopWords.some(w => data.transcript.toLowerCase().includes(w)) || data.flag_escalate) {
+      const botResponse = (data.assistant || '').toLowerCase()
+      const botAlertsNurse = ['let a nurse know', 'let your nurse know', 'let the nurse know',
+        'nurse know right away', 'alert a nurse', 'notify a nurse', 'call a nurse',
+        'inform a nurse', 'tell a nurse'].some(p => botResponse.includes(p))
+      if (stopWords.some(w => data.transcript.toLowerCase().includes(w)) || data.flag_escalate || botAlertsNurse) {
         handleEnd()
         return
       }
