@@ -25,8 +25,19 @@ RF_PARAMS = dict(
     min_samples_split = 20,
     min_samples_leaf  = 2,
     max_samples       = 0.8,
+    max_features      = 0.5,
+    max_depth         = 7,
+    criterion         = "gini",
+    class_weight      = "balanced_subsample",
+)
+
+RF_PARAMS_NO_SERVICE = dict(
+    n_estimators      = 100,
+    min_samples_split = 20,
+    min_samples_leaf  = 2,
+    max_samples       = 0.8,
     max_features      = 0.7,
-    max_depth         = 5,
+    max_depth         = 4,
     criterion         = "gini",
     class_weight      = "balanced_subsample",
 )
@@ -75,7 +86,7 @@ def train():
     # ── Fallback model (5 features, no curr_service) ─────────────
     X_train_ns = X_train[FEATURE_COLS_NO_SERVICE]
     X_test_ns  = X_test[FEATURE_COLS_NO_SERVICE]
-    fallback_rf = RandomForestClassifier(**RF_PARAMS)
+    fallback_rf = RandomForestClassifier(**RF_PARAMS_NO_SERVICE)
     fallback_rf.fit(X_train_ns, y_train)
     _evaluate("Fallback model (5 features, no service)", fallback_rf,
               X_train_ns, X_test_ns, y_train, y_test, FEATURE_COLS_NO_SERVICE)
