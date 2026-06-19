@@ -78,25 +78,13 @@
       "description": "Attention, concentration, and numerical reasoning exercises",
       "cst_basis": "Spector CST manual - attention training, targets domain significantly declining in POCD",
       "low": [
-        "Can you count backwards from 10 for me?",
-        "What months of the year can you name?",
-        "Can you tell me the days of the week in order?",
-        "What were the last three things we talked about?",
-        "Can you count backwards from 20 by 2s?"
+        "If you had 20 apples and gave away 7, how many would you have left?"
       ],
       "medium": [
-        "I'm going to describe something and I want you to guess what it is — it's something you find in a kitchen, it's silver, and you use it to eat soup. What is it?",
-        "Can you remember three things I mentioned earlier in our conversation?",
-        "If you had 20 apples and gave away 7, how many would you have left?",
-        "Can you name 5 things you would pack for a trip to the beach?",
-        "What did we talk about at the very beginning of our conversation today?"
+        "If you had 20 apples and gave away 7, how many would you have left?"
       ],
       "high": [
-        "If you were planning a dinner party for 6 people, what would you need to organize?",
-        "Can you tell me three things that happened in your life this past year?",
-        "If you had to give directions from your home to your favourite restaurant, what would they be?",
-        "Can you remember everything we've discussed today and summarize it for me?",
-        "If you won a million dollars tomorrow, what would be your plan for spending it?"
+        "If you had 20 apples and gave away 7, how many would you have left?"
       ]
     },
     "abstraction_and_reasoning": {
