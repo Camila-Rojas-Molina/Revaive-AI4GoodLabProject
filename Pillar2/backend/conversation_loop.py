@@ -36,7 +36,7 @@ def fetch_selected_domains(patient_id: str) -> list:
 
 
 SAMPLE_RATE = 16000
-SILENCE_THRESHOLD = 0.030  # raised slightly so brief breath pauses don't trigger early cutoff
+SILENCE_THRESHOLD = 0.050  # raised slightly so brief breath pauses don't trigger early cutoff
 SILENCE_DURATION = 0.5       # wait 0.5 seconds of quiet before treating it as end of turn
 
 
