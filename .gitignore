@@ -35,3 +35,9 @@ pnpm-debug.log*
 
 # Project docs excluded from git history
 PRD.md
+
+# Large data files excluded from git history
+Pillar1/model/pod_dataset_2_curr_service.csv
+Pillar1/model/pod_dataset_2_disease_code_category.csv
+Pillar1/model/mimic_processed_for_pod.csv
+Pillar1/model/mimic_processed_for_pod.csv

@@ -23,7 +23,7 @@ except FileNotFoundError as e:
     raise RuntimeError(f"model_no_service.pkl not found: {e}")
 
 # ---------------------------------------------------------------------------
-# Encoding maps — must match LabelEncoder order from training (alphabetical)
+# Encoding maps — updated to match your new alphabetical factorization order
 # ---------------------------------------------------------------------------
 GENDER_MAP = {"F": 0, "M": 1}
 
@@ -35,7 +35,8 @@ ADMISSION_TYPE_MAP = {
     "URGENT": 4,
 }
 
-# Only services present in training data — everything else uses the fallback model
+# Match the service codes present in the current training dataset.
+# Any other service strings should route to the fallback model.
 SERVICE_MAP = {
     "CMED – Cardiac Medical":    0,
     "CSURG – Cardiac Surgery":   1,
@@ -51,31 +52,48 @@ SERVICE_MAP = {
 
 KNOWN_SERVICES = set(SERVICE_MAP.keys())
 
+# CRITICAL FIX: Explicitly match the precise column sequence from training sets
+FEATURES_MAIN     = ["anchor_age", "gender", "admission_type", "prior_delirium", "dementia", "curr_service"]
+FEATURES_FALLBACK = ["anchor_age", "gender", "admission_type", "prior_delirium", "dementia"]
+
 
 def _predict_with_routing(anchor_age, gender_enc, admission_enc, prior_delirium, dementia, service_label):
     """Route to main model if service is known, fallback model otherwise."""
     if service_label in KNOWN_SERVICES:
-        features = pd.DataFrame([{
+        features_dict = {
             "anchor_age":      anchor_age,
             "gender":          gender_enc,
             "admission_type":  admission_enc,
             "prior_delirium":  prior_delirium,
             "dementia":        dementia,
             "curr_service":    SERVICE_MAP[service_label],
-        }])
-        prediction = model.predict(features)[0]
-        proba = model.predict_proba(features)[0]
+        }
+        # Force column sequence layout
+        features_df = pd.DataFrame([features_dict])[FEATURES_MAIN]
+        
+        proba = model.predict_proba(features_df)[0][1]
+        threshold = 0.45
+        model_used = "main_6_feature"
     else:
-        features = pd.DataFrame([{
+        features_dict = {
             "anchor_age":      anchor_age,
             "gender":          gender_enc,
             "admission_type":  admission_enc,
             "prior_delirium":  prior_delirium,
             "dementia":        dementia,
-        }])
-        prediction = model_no_service.predict(features)[0]
-        proba = model_no_service.predict_proba(features)[0]
-    return int(prediction), proba
+        }
+        # Force column sequence layout
+        features_df = pd.DataFrame([features_dict])[FEATURES_FALLBACK]
+        
+        proba = model_no_service.predict_proba(features_df)[0][1]
+        threshold = 0.50
+        model_used = "fallback_5_feature"
+
+    # Evaluate prediction category manually using the explicit custom thresholds
+    label = "high" if proba >= threshold else "low"
+    confidence = round(float(proba if label == "high" else (1.0 - proba)), 3)
+
+    return label, confidence, model_used
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +105,8 @@ class RiskInput(BaseModel):
     admission_type: str # "ELECTIVE", "EW EMER.", "URGENT", "DIRECT EMER.", "SURGICAL SAME DAY ADMISSION"
     prior_delirium: int # 0 or 1
     dementia: int       # 0 or 1
-    curr_service: str   # clinical service label (e.g. "CSURG – Cardiac Surgery") or "Unknown / Other"
+    curr_service: str   # clinical service label (e.g. "CSURG – Cardiac Surgery")
+
 
 # ---------------------------------------------------------------------------
 # Prediction endpoint
@@ -99,7 +118,7 @@ async def predict_risk(data: RiskInput, _user=Depends(get_current_user)):
     if data.admission_type not in ADMISSION_TYPE_MAP:
         raise HTTPException(status_code=422, detail=f"Invalid admission_type. Options: {list(ADMISSION_TYPE_MAP.keys())}")
 
-    prediction, proba = _predict_with_routing(
+    label, confidence, model_used = _predict_with_routing(
         anchor_age     = data.anchor_age,
         gender_enc     = GENDER_MAP[data.gender],
         admission_enc  = ADMISSION_TYPE_MAP[data.admission_type],
@@ -107,7 +126,9 @@ async def predict_risk(data: RiskInput, _user=Depends(get_current_user)):
         dementia       = data.dementia,
         service_label  = data.curr_service,
     )
+    
     return {
-        "label":      {0: "low", 1: "high"}[prediction],
-        "confidence": round(float(max(proba)), 3),
+        "label":       label,
+        "confidence":  confidence,
+        "model_used":  model_used
     }

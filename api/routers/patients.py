@@ -41,7 +41,7 @@ class PatientCreate(BaseModel):
 
 @router.post("")
 async def create_patient(patient: PatientCreate, user=Depends(get_current_user)):
-    prediction, proba = _predict_with_routing(
+    label, confidence, model_used = _predict_with_routing(
         anchor_age     = patient.anchor_age or 0,
         gender_enc     = _GENDER.get(patient.gender or "", 0),
         admission_enc  = _ADMISSION.get(patient.admission_type or "", 1),
@@ -49,8 +49,7 @@ async def create_patient(patient: PatientCreate, user=Depends(get_current_user))
         dementia       = patient.dementia,
         service_label  = patient.surgical_category or "Unknown / Other",
     )
-    label = {0: "low", 1: "high"}[prediction]
-    confidence = round(float(max(proba)), 3)
+    # `confidence` is already returned as a rounded float from the risk routing helper.
 
     db = _db()
     # Ensure the nurse has a profiles row (accounts created without the trigger won't have one)
@@ -153,7 +152,7 @@ async def update_patient(patient_id: str, data: PatientUpdate, user=Depends(get_
         "surgical_category": data.surgical_category,
     }
     if all(v is not None for v in model_fields.values()):
-        prediction, proba = _predict_with_routing(
+        label, confidence, model_used = _predict_with_routing(
             anchor_age     = model_fields["anchor_age"],
             gender_enc     = _GENDER.get(model_fields["gender"] or "", 0),
             admission_enc  = _ADMISSION.get(model_fields["admission_type"] or "", 1),
@@ -161,8 +160,8 @@ async def update_patient(patient_id: str, data: PatientUpdate, user=Depends(get_
             dementia       = model_fields["dementia"],
             service_label  = model_fields["surgical_category"] or "Unknown / Other",
         )
-        updates["pod_risk_label"] = {0: "low", 1: "high"}[prediction]
-        updates["pod_risk_score"] = round(float(max(proba)), 3)
+        updates["pod_risk_label"] = label
+        updates["pod_risk_score"] = confidence
 
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
